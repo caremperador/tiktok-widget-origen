@@ -64,13 +64,16 @@
         <div class="top-row">
             <div style="flex: 0.4;">
                 <label style="color: #cc00ff;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás</label>
-                <input type="number" id="input-countdown-sec" value="30" style="margin-bottom: 15px;">
+                <input type="number" id="input-countdown-sec" value="60" style="margin-bottom: 15px;">
                 
                 <button class="btn-clear" onclick="resetearValores()" style="width: 100%; background: #ff003c; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,0,60,0.4);"><i class="fa-solid fa-skull"></i> Resetear a 0 (Unidades)</button>
             </div>
             <div style="flex: 1; display: flex; flex-direction: column;">
                 <label class="checkbox-group"><input type="checkbox" id="check-countdown" checked> Activar Cuenta Regresiva</label>
-                <p style="font-size: 13px; color: #ccc;">Las imágenes de Capibara y Dona ya vienen guardadas y activas por defecto. Puedes sumar unidades con un clic usando los botones rápidos (+1, +5, +10).</p>
+                <p style="font-size: 13px; color: #ccc;">
+                    • En <b>Empate (0 - 0)</b> o si gana el Equipo 1, el overlay muestra: <b>[Dona] = RESET</b>.<br>
+                    • Cuando el <b>Equipo 2 (Reset)</b> supera en puntos al Equipo 1 (prueba dándole a <b>+1</b> en el Equipo 2), el overlay muestra exactamente: <b>1 [Capibara] = SALVAR</b> arriba y <b>REINICIANDO EN + Cuenta regresiva</b> abajo.
+                </p>
             </div>
         </div>
 
@@ -254,7 +257,7 @@
                 if (enU1) { styleBg = "background-color: #004d00; color: #00ff66;"; textoAdd = " ✅ [Eq 1]"; } 
                 else if (enU2) { styleBg = "background-color: #4d0012; color: #ff003c;"; textoAdd = " ✅ [Eq 2]"; }
                 
-                let optUni = `<option value="${g.id}" style="${styleBg}">[ID: ${g.id}]${g.name} (${g.diamonds} Monedas)${textoAdd}</option>`; 
+                let optUni = `<option value="${g.id}" style="${styleBg}">[ID: ${g.id}] ${g.name} (${g.diamonds} Monedas)${textoAdd}</option>`; 
                 u1.innerHTML += optUni; u2.innerHTML += optUni; 
             });
 
@@ -267,15 +270,14 @@
 
             if(!uConf) {
                 needsAutoSave = true;
-                uConf = { equipo1: {}, equipo2: {}, enableCountdown: true, countdownSeconds: 30 };
+                uConf = { equipo1: {}, equipo2: {}, enableCountdown: true, countdownSeconds: 60 };
             }
 
-            // Si en el servidor estaban vacías las imágenes, marcamos para auto-guardar por defecto sin pedir clic
             if (!uConf.equipo1?.imgUnidad || uConf.equipo1.imgUnidad.trim() === "" || !uConf.equipo2?.imgUnidad || uConf.equipo2.imgUnidad.trim() === "") {
                 needsAutoSave = true;
             }
 
-            document.getElementById('input-countdown-sec').value = uConf.countdownSeconds || 30;
+            document.getElementById('input-countdown-sec').value = uConf.countdownSeconds || 60;
             document.getElementById('check-countdown').checked = uConf.enableCountdown !== undefined ? uConf.enableCountdown : true;
             
             document.getElementById('eq1-nombre').value = uConf.equipo1?.nombre || "EQUIPO 1"; 
@@ -312,7 +314,6 @@
             renderDropdowns();
             renderListUni(1); renderListUni(2);
 
-            // Auto-guarda silenciosamente en el servidor si faltaban los valores por defecto
             if (needsAutoSave) {
                 guardarConfig(true);
             }
@@ -323,7 +324,6 @@
             document.getElementById('lbl-pts-eq2-uni').innerText = data.totalReiniciar;
         });
 
-        // Función para los botones rápidos +1, +5, +10
         function sumarRapido(equipo, cantidad) {
             socket.emit('modificar_puntos_unidades', { equipo: equipo, cantidad: cantidad });
         }
@@ -384,7 +384,7 @@
                 equipo1: { nombre: document.getElementById('eq1-nombre').value.trim(), nombreSingular: document.getElementById('eq1-sing').value.trim(), nombrePlural: document.getElementById('eq1-plur').value.trim(), color: c1, imgUnidad: img1Val, regalos: eq1GiftsUni },
                 equipo2: { nombre: document.getElementById('eq2-nombre').value.trim(), nombreSingular: document.getElementById('eq2-sing').value.trim(), nombrePlural: document.getElementById('eq2-plur').value.trim(), color: c2, imgUnidad: img2Val, regalos: eq2GiftsUni },
                 enableCountdown: document.getElementById('check-countdown').checked, 
-                countdownSeconds: parseInt(document.getElementById('input-countdown-sec').value) || 30,
+                countdownSeconds: parseInt(document.getElementById('input-countdown-sec').value) || 60,
                 battleStyle: configStyle
             };
 

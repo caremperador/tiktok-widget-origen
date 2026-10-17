@@ -26,7 +26,7 @@
             height: 100vh;
         }
         
-        /* 📌 LÍNEA 1: POSICIÓN 100% FIJA E INMÓVIL (Nunca se mueve cuando aparece el contador abajo) */
+        /* 📌 LÍNEA 1: POSICIÓN 100% FIJA E INMÓVIL (Arriba) */
         .countdown-line1 { 
             position: absolute;
             top: 32%; 
@@ -69,7 +69,7 @@
             letter-spacing: 2px;
         }
 
-        /* 📌 BLOQUE DE CUENTA ATRÁS ABAJO: Igual a la foto (REINICIANDO EN arriba y 56 grande abajo) */
+        /* 📌 BLOQUE DE CUENTA ATRÁS ABAJO: Igual a la foto (REINICIANDO EN arriba y número grande abajo) */
         .countdown-bottom-block {
             position: absolute;
             top: 47%; /* Fijo debajo de la línea del capibara sin empujarla jamás */
@@ -129,7 +129,7 @@
             <!-- Línea 1 Fija arriba: 1 [Capibara] = SALVAR o [Dona] = RESET -->
             <div class="countdown-line1" id="countdown-line1-text"></div>
             
-            <!-- Bloque inferior independiente: REINICIANDO EN arriba y el número grande abajo (como en tu foto) -->
+            <!-- Bloque inferior independiente: REINICIANDO EN arriba y el número grande abajo -->
             <div class="countdown-bottom-block" id="countdown-bottom-block">
                 <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
                 <div class="countdown-number" id="timer">30</div>
@@ -150,7 +150,7 @@
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
 
-        // Configuración ya cargada por defecto para que funcione al instante sin tocar "Guardar Todo en Vivo"
+        // Configuración cargada por defecto para que funcione al instante
         let currentConfig = {
             equipo1: {
                 nombre: "EQUIPO 1",
@@ -244,11 +244,15 @@
 
             const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 0.85;
             const dist = style.shadowDistance !== undefined ? style.shadowDistance : 4;
-            const shadowColor = `rgba(0,0,0,${op})`;  l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
-            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px ${shadowColor}`; // Resplandor rojizo suave detrás del número blanco exactamente como en tu foto lt.style.textShadow = `0px ${dist + 1}px 0px #000000, 0 0 28px rgba(255, 0, 85, 0.85), 0 0 12px rgba(255, 0, 60, 0.65)`;
+            const shadowColor = `rgba(0,0,0,${op})`;
+
+            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
+            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
+            // Resplandor rojizo suave detrás del número blanco exactamente como en tu foto
+            lt.style.textShadow = `0px ${dist + 1}px 0px #000000, 0 0 28px rgba(255, 0, 85, 0.85), 0 0 12px rgba(255, 0, 60, 0.65)`;
         }
 
-        // Inicializar diseño y vista de inmediato con los valores por defecto
+        // Inicializar diseño y vista de inmediato
         applyDesign(currentConfig.battleStyle);
         procesarActualizacionVisual(latestData);
 
@@ -320,7 +324,38 @@
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
             
             winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c2}`;
-            winnerName.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op})`;  document.getElementById('winner-zone').style.display = 'flex';  socket.emit('reset_unidades');  setTimeout(() => { isGameOver = false; document.getElementById('winner-zone').style.display = 'none'; if (latestData) { wasLosing = latestData.totalReiniciar > latestData.totalSalvar; procesarActualizacionVisual(latestData); } }, 3000); }  function triggerSaved(topSalvar) { isGameOver = true; if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }  document.getElementById('countdown-line1-text').style.display = 'none'; document.getElementById('countdown-bottom-block').style.display = 'none';  let c1 = currentConfig.equipo1.color \vert{}\vert{} "#00ff66"; let cleanName = topSalvar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();  let winnerImg = document.getElementById('winner-avatar'); let winnerTitle = document.getElementById('winner-title'); let winnerName = document.getElementById('winner-name');  winnerImg.src = topSalvar.avatar ? topSalvar.avatar : 'https://via.placeholder.com/150/222/fff?text=?'; winnerImg.style.borderColor = c1; winnerImg.style.boxShadow = `0 0 20px ${c1}`;
+            winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
+
+            document.getElementById('winner-zone').style.display = 'flex';
+            socket.emit('reset_unidades');
+
+            setTimeout(() => {
+                isGameOver = false;
+                document.getElementById('winner-zone').style.display = 'none';
+                if (latestData) {
+                    wasLosing = latestData.totalReiniciar > latestData.totalSalvar;
+                    procesarActualizacionVisual(latestData);
+                }
+            }, 3000);
+        }
+
+        function triggerSaved(topSalvar) {
+            isGameOver = true;
+            if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+
+            document.getElementById('countdown-line1-text').style.display = 'none';
+            document.getElementById('countdown-bottom-block').style.display = 'none';
+
+            let c1 = currentConfig.equipo1.color || "#00ff66";
+            let cleanName = topSalvar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
+
+            let winnerImg = document.getElementById('winner-avatar');
+            let winnerTitle = document.getElementById('winner-title');
+            let winnerName = document.getElementById('winner-name');
+
+            winnerImg.src = topSalvar.avatar ? topSalvar.avatar : 'https://via.placeholder.com/150/222/fff?text=?';
+            winnerImg.style.borderColor = c1;
+            winnerImg.style.boxShadow = `0 0 20px ${c1}`;
             
             winnerTitle.innerText = `¡TE SALVÓ!`;
             winnerTitle.style.color = c1;
@@ -329,7 +364,8 @@
             
             const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
-            winnerTitle.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c1}`; winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
+            winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c1}`;
+            winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
 
             document.getElementById('winner-zone').style.display = 'flex';
 
@@ -402,7 +438,7 @@
                 ? currentConfig.equipo2.imgUnidad.trim() 
                 : DEFAULT_DONA_IMG;
 
-            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 -> "1 [Capibara] = SALVAR" arriba fijo + "REINICIANDO EN / 56" abajo
+            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 (PELIGRO DE RESET) -> "1 [Capibara] = SALVAR" arriba + "REINICIANDO EN / 56" abajo
             if (reiniciarPts > salvarPts) {
                 let diff = reiniciarPts - salvarPts;
                 let nom1 = (diff === 1) ? (currentConfig.equipo1.nombreSingular || "CAPIBARA") : (currentConfig.equipo1.nombrePlural || "CAPIBARAS");
