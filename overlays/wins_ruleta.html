@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; padding: 0; overflow: hidden; background: transparent;
+            font-family: 'Luckiest Guy', cursive;
+        }
+
+        /* 🌟 TEXTO PRINCIPAL GIGANTE (WINS / META) */
+        .score-container {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: baseline;
+            text-align: center;
+            font-size: 110px;
+            letter-spacing: 2px;
+            text-shadow: 0 5px 0 #000, 0 -5px 0 #000, 5px 0 0 #000, -5px 0 0 #000, 5px 5px 0 #000, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000, 0 10px 20px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        .score-actual { color: #fff; transition: color 0.3s; }
+        .score-actual.negative { color: #ff003c; }
+        .score-actual.positive { color: #00ff66; }
+        .score-meta { color: #fff; font-size: 90px; }
+
+        /* 🌟 POP-UPS DE REGALOS (Veloces y Únicos) */
+        .popups-wrapper {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+            width: 100%;
+            align-items: center;
+        }
+
+        .gift-popup {
+            display: flex;
+            align-items: center;
+            background: rgba(15, 15, 20, 0.95);
+            border-radius: 50px;
+            padding: 8px 25px 8px 8px;
+            border: 3px solid #fff;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            /* Animación Ultra Rápida (~1.65 segundos total) */
+            animation: popInBounce 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, fadeOut 0.2s ease-in 1.2s forwards;
+            opacity: 0;
+        }
+
+        .gift-popup.sumar { border-color: #00ff66; box-shadow: 0 0 20px rgba(0,255,102,0.4); }
+        .gift-popup.restar { border-color: #ff003c; box-shadow: 0 0 20px rgba(255,0,60,0.4); }
+
+        .gp-avatar { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid #fff; background-color: #000;}
+        
+        .gp-info { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+        .gp-amount { font-size: 32px; font-weight: 900; font-family: 'Luckiest Guy', cursive; -webkit-text-stroke: 1px black; line-height: 1; }
+        .gift-popup.sumar .gp-amount { color: #00ff66; }
+        .gift-popup.restar .gp-amount { color: #ff003c; }
+        .gp-name { font-size: 15px; font-weight: 900; font-family: 'Montserrat', sans-serif; color: #ddd; text-transform: uppercase; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;}
+
+        @keyframes popInBounce { 0% { transform: translateY(-20px) scale(0.7); opacity: 0; } 70% { transform: translateY(0) scale(1.1); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        @keyframes fadeOut { 100% { transform: translateY(30px) scale(0.8); opacity: 0; } }
+
+        /* 🌟 RULETA HORIZONTAL (SLOT MACHINE) */
+        .ruleta-container {
+            position: absolute;
+            top: 260px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 450px;
+            height: 90px;
+            background: rgba(10, 10, 15, 0.95);
+            border-radius: 12px;
+            border: 4px solid #ffd700;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(255,215,0,0.5);
+            overflow: hidden;
+            display: none; 
+            z-index: 20;
+        }
+
+        .ruleta-selector {
+            position: absolute;
+            top: 0; bottom: 0;
+            left: 50%; transform: translateX(-50%);
+            width: 4px;
+            background: #ffd700;
+            z-index: 25;
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        .ruleta-strip {
+            display: flex;
+            height: 100%;
+            align-items: center;
+            transition: transform 3.5s cubic-bezier(0.1, 0.9, 0.2, 1);
+            will-change: transform;
+        }
+
+        .ruleta-item {
+            box-sizing: border-box; 
+            width: 110px;
+            height: 70px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            -webkit-text-stroke: 1.5px black;
+            background: #222;
+            margin: 0 5px;
+            border-radius: 8px;
+            border: 2px solid #000;
+        }
+
+        .r-pos { color: #00ff66; }
+        .r-neg { color: #ff003c; }
+
+        .ruleta-author {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffd700;
+            color: #000;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .ruleta-author img { width: 25px; height: 25px; border-radius: 50%; border: 1px solid #000; }
+
+        @keyframes ruletaEnter { 0% { transform: translateX(-50%) translateY(-50px) scale(0.5); opacity: 0; } 100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; } }
+        @keyframes ruletaExit { 100% { transform: translateX(-50%) translateY(50px) scale(0.5); opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="score-container">
+        <span class="score-actual" id="s-actual">0</span>
+        <span class="score-meta" id="s-meta">/5</span>
+    </div>
+
+    <!-- Contenedor único para los Pop-Ups veloces -->
+    <div class="popups-wrapper" id="popups-area"></div>
+
+    <div class="ruleta-container" id="ruleta-box">
+        <div class="ruleta-author" id="r-author">
+            <img src="" id="r-avatar"> <span id="r-name">Usuario</span> giró la ruleta
+        </div>
+        <div class="ruleta-selector"></div>
+        <div class="ruleta-strip" id="r-strip"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let audioCtx = null;
+        const opts = [1, -1, 50, -50, 100, -100, 200, -200, 500, -500, 1000, -1000];
+        
+        // 🌟 SISTEMA DE SONIDOS ASMR Y POPUPS
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        // Click manual necesario en OBS o Navegador para activar el audio por políticas de Google
+        document.body.addEventListener('click', initAudio, { once: true });
+
+        function playAsmrTick() {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                
+                osc.type = 'triangle'; // Sonido mecánico cortito
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+                
+                filter.type = 'highpass';
+                filter.frequency.value = 1000;
+                
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.05);
+            } catch(e) {}
+        }
+
+        function playPopSound(type) {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                
+                if (type === 'sumar') {
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+                    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1); 
+                } else {
+                    osc.type = "sawtooth";
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime); 
+                    osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.1); 
+                }
+                
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.2);
+            } catch(e) {}
+        }
+
+
+        // 🌟 ACTUALIZAR PUNTOS PRINCIPALES
+        socket.on('wins_ruleta_update', (estado) => {
+            let act = document.getElementById('s-actual');
+            act.innerText = estado.actuales;
+            document.getElementById('s-meta').innerText = '/' + estado.meta;
+            
+            if (estado.actuales < 0) { act.className = "score-actual negative"; } 
+            else if (estado.actuales > 0) { act.className = "score-actual positive"; } 
+            else { act.className = "score-actual"; }
+        });
+
+        // 🌟 POPUPS DE REGALOS (VELOCES Y NO APILABLES)
+        let popupTimeout = null;
+        socket.on('wins_ruleta_popup', (data) => {
+            let area = document.getElementById('popups-area');
+            
+            // Reemplazo Inmediato: Borra el popup anterior de un golpe si entra uno nuevo
+            area.innerHTML = ''; 
+            clearTimeout(popupTimeout); 
+
+            let div = document.createElement('div');
+            div.className = `gift-popup ${data.type}`; 
+            
+            let sign = data.amount > 0 ? '+' : '';
+            let textWin = Math.abs(data.amount) === 1 ? 'Win' : 'Wins';
+            
+            div.innerHTML = `
+                <img src="${data.avatar}" class="gp-avatar" onerror="this.src='https://via.placeholder.com/150/222/fff?text=?'">
+                <div class="gp-info">
+                    <span class="gp-amount">${sign}${data.amount} ${textWin}</span>
+                    <span class="gp-name">${data.name}</span>
+                </div>
+            `;
+            
+            area.appendChild(div);
+            playPopSound(data.type); 
+            
+            // Lo elimina rápidamente en 1.5 segundos
+            popupTimeout = setTimeout(() => {
+                if (area.contains(div)) area.removeChild(div);
+            }, 1500); 
+        });
+
+        // 🌟 SISTEMA DE RULETA 
+        let isSpinning = false;
+        let ruletaQueue = [];
+
+        socket.on('wins_ruleta_trigger', (data) => {
+            ruletaQueue.push(data);
+            if (!isSpinning) processRuletaQueue();
+        });
+
+        function processRuletaQueue() {
+            if (ruletaQueue.length === 0) {
+                isSpinning = false;
+                return;
+            }
+            
+            isSpinning = true;
+            let data = ruletaQueue.shift();
+            
+            let box = document.getElementById('ruleta-box');
+            let strip = document.getElementById('r-strip');
+            
+            document.getElementById('r-avatar').src = data.avatar;
+            document.getElementById('r-name').innerText = data.name;
+            
+            strip.style.transition = 'none'; 
+            strip.style.transform = 'translateX(0px)';
+            strip.innerHTML = '';
+            
+            let targetIndex = 28; 
+            let stripHTML = '';
+
+            for (let i = 0; i < 35; i++) {
+                let val = (i === targetIndex) ? data.result : opts[Math.floor(Math.random() * opts.length)];
+                let sign = val > 0 ? '+' : '';
+                let colorClass = val > 0 ? 'r-pos' : 'r-neg';
+                stripHTML += `<div class="ruleta-item ${colorClass}">${sign}${val}</div>`;
+            }
+            strip.innerHTML = stripHTML;
+
+            box.style.display = 'block';
+            box.style.animation = 'ruletaEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+
+            let offset = (targetIndex * 120) + 60 - 225;
+
+            setTimeout(() => {
+                strip.style.transition = 'transform 3.5s cubic-bezier(0.1, 0.9, 0.2, 1)';
+                strip.style.transform = `translateX(-${offset}px)`;
+                
+                // 🌟 LÓGICA DE SONIDO ASMR FRENANDO
+                let tickSpeed = 40;
+                let elapsed = 0;
+                function spinTicker() {
+                    if (elapsed > 4000) return; // Se detiene un poco antes de los 4.5s
+                    playAsmrTick();
+                    elapsed += tickSpeed;
+                    tickSpeed += 2.5; // Efecto de desaceleración (freno progresivo)
+                    setTimeout(spinTicker, tickSpeed);
+                }
+                spinTicker(); 
+                
+                setTimeout(() => {
+                    // La ruleta frena y el OBS avisa al servidor para aplicar matemática exacta
+                    socket.emit('wins_ruleta_end', { spinId: data.spinId, result: data.result });
+
+                    box.style.animation = 'ruletaExit 0.5s ease-in forwards';
+                    setTimeout(() => {
+                        box.style.display = 'none';
+                        processRuletaQueue(); // Llama a la siguiente si había cola
+                    }, 500);
+
+                }, 4500); 
+
+            }, 50);
+        }
+    </script>
+</body>
+</html>

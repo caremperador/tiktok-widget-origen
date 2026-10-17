@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Gestor de Backup y Debug</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; display: flex; justify-content: center; }
+        .box { background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 40px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 100%; max-width: 600px; text-align: center; }
+        h3 { color: #ffd700; text-transform: uppercase; margin-top: 0; font-size: 22px; margin-bottom: 10px; }
+        p { color: #aaa; font-size: 14px; margin-bottom: 35px; line-height: 1.6; }
+        
+        .btn-action { padding: 18px 30px; font-weight: bold; border: none; cursor: pointer; border-radius: 8px; text-transform: uppercase; font-size: 15px; width: 100%; max-width: 350px; margin: 12px auto; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s ease; }
+        
+        .btn-download { background: #00f2fe; color: black; }
+        .btn-download:hover { box-shadow: 0 0 20px rgba(0, 242, 254, 0.5); transform: translateY(-2px); }
+        
+        .btn-upload { background: #ffaa00; color: black; }
+        .btn-upload:hover { box-shadow: 0 0 20px rgba(255, 170, 0, 0.5); transform: translateY(-2px); }
+
+        /* NUEVO BOTÓN UNIFICAR */
+        .btn-unify { background: #ff00ff; color: white; }
+        .btn-unify:hover { box-shadow: 0 0 20px rgba(255, 0, 255, 0.5); transform: translateY(-2px); }
+
+        .btn-debug { background: #444; color: white; border: 1px solid #666; margin-top: 30px; }
+        .btn-debug:hover { background: #ff003c; border-color: #ff003c; box-shadow: 0 0 20px rgba(255, 0, 60, 0.5); transform: translateY(-2px); }
+        
+        input[type="file"] { display: none; }
+        .status-msg { margin-top: 25px; font-weight: bold; font-size: 15px; padding: 15px; border-radius: 8px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h3><i class="fa-solid fa-cloud-arrow-down"></i> Centro de Seguridad y Backup</h3>
+        <p>Descarga copias de seguridad, restaura datos o unifica múltiples historiales guardando siempre el récord más alto.</p>
+
+        <!-- Botón de Descarga -->
+        <button class="btn-action btn-download" onclick="descargarBackup()">
+            <i class="fa-solid fa-download"></i> Descargar data.json
+        </button>
+        
+        <!-- Botón de Carga Simple -->
+        <label for="file-upload" class="btn-action btn-upload">
+            <i class="fa-solid fa-upload"></i> Restaurar 1 solo backup
+        </label>
+        <input type="file" id="file-upload" accept=".json" onchange="cargarBackup(event)">
+
+        <!-- NUEVO BOTÓN: UNIFICAR MÚLTIPLES BACKUPS -->
+        <label for="files-unify" class="btn-action btn-unify">
+            <i class="fa-solid fa-object-group"></i> Unificar Múltiples Backups
+        </label>
+        <!-- Fíjate en el atributo "multiple" que permite elegir varios archivos -->
+        <input type="file" id="files-unify" accept=".json" multiple onchange="unificarArchivos(event)">
+
+        <!-- BOTÓN DEBUG -->
+        <button class="btn-action btn-debug" onclick="descargarDebug()">
+            <i class="fa-solid fa-bug"></i> Descargar Reporte Debug
+        </button>
+
+        <div id="status-msg" class="status-msg"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentConfig = null;
+
+        socket.on('config_actual', (config) => {
+            currentConfig = config;
+        });
+
+        function descargarBackup() {
+            if (!currentConfig) {
+                mostrarMensaje("⚠️ Esperando conexión con el servidor...", "#ff003c", "#330000"); return;
+            }
+            const now = new Date();
+            const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+            const dia = now.getDate(); const mes = meses[now.getMonth()]; const anio = now.getFullYear();
+            const horas = String(now.getHours()).padStart(2, '0'); const minutos = String(now.getMinutes()).padStart(2, '0');
+
+            const fileName = `data_${dia}_de_${mes}_${anio}_${horas}_${minutos}.json`;
+            const dataStr = JSON.stringify(currentConfig, null, 4);
+
+            ejecutarDescarga(dataStr, fileName, "application/json");
+            mostrarMensaje("✅ ¡Backup descargado con éxito!", "#00ff66", "#003311");
+        }
+
+        function cargarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (confirm("🚨 ATENCIÓN: ¿Estás seguro de que deseas SOBRESCRIBIR la base de datos actual con este archivo?")) {
+                        socket.emit('importar_historial', parsedData);
+                        mostrarMensaje("✅ ¡Backup restaurado correctamente!", "#00ff66", "#003311");
+                        document.getElementById('file-upload').value = '';
+                    } else {
+                        document.getElementById('file-upload').value = '';
+                    }
+                } catch (err) {
+                    mostrarMensaje("❌ Error: El archivo seleccionado no es válido.", "#ff003c", "#330000");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 🌟 NUEVA FUNCIÓN: Unificar Múltiples Archivos
+        async function unificarArchivos(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            if (!currentConfig) {
+                mostrarMensaje("⚠️ Esperando configuración actual del servidor...", "#ff003c", "#330000");
+                event.target.value = '';
+                return;
+            }
+
+            if (!confirm(`🚨 Vas a fusionar ${files.length} backups con tu base de datos actual. El sistema buscará a cada usuario y conservará ÚNICAMENTE los récords más altos que encuentre. ¿Proceder?`)) {
+                event.target.value = '';
+                return;
+            }
+
+            // Hacemos una copia profunda de la configuración actual
+            let masterData = JSON.parse(JSON.stringify(currentConfig));
+
+            // Función maestra de comparación (Toma el valor más alto)
+            function unificarHistorial(masterObj, newObj, keyToCompare) {
+                if (!newObj) return;
+                for (let user in newObj) {
+                    if (!masterObj[user]) {
+                        masterObj[user] = JSON.parse(JSON.stringify(newObj[user]));
+                    } else {
+                        // Comparar el valor principal (ej. 'wins' o 'count')
+                        if (newObj[user][keyToCompare] > masterObj[user][keyToCompare]) {
+                            masterObj[user][keyToCompare] = newObj[user][keyToCompare];
+                        }
+                        // Comparar racha (streak) si existe
+                        if (newObj[user].streak !== undefined) {
+                            masterObj[user].streak = Math.max(masterObj[user].streak || 0, newObj[user].streak);
+                        }
+                        // Actualizar avatar al más reciente
+                        if (newObj[user].avatar) {
+                            masterObj[user].avatar = newObj[user].avatar;
+                        }
+                    }
+                }
+            }
+
+            // Iteramos sobre todos los archivos seleccionados
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    let text = await files[i].text();
+                    let fileData = JSON.parse(text);
+
+                    // 1. Fusionar Top VIP
+                    if (fileData.topVIP && fileData.topVIP.recordHistorico) {
+                        masterData.topVIP = masterData.topVIP || { recordHistorico: {} };
+                        unificarHistorial(masterData.topVIP.recordHistorico, fileData.topVIP.recordHistorico, 'wins');
+                    }
+
+                    // 2. Fusionar Top Likes
+                    if (fileData.topLikes && fileData.topLikes.recordHistorico) {
+                        masterData.topLikes = masterData.topLikes || { recordHistorico: {} };
+                        unificarHistorial(masterData.topLikes.recordHistorico, fileData.topLikes.recordHistorico, 'wins');
+                    }
+
+                    // 3. Fusionar Racha Versus
+                    if (fileData.rachaVersus) {
+                        masterData.rachaVersus = masterData.rachaVersus || { salvadas: {}, reinicios: {} };
+                        unificarHistorial(masterData.rachaVersus.salvadas, fileData.rachaVersus.salvadas, 'count');
+                        unificarHistorial(masterData.rachaVersus.reinicios, fileData.rachaVersus.reinicios, 'count');
+                    }
+
+                    // 4. Fusionar Salón de la Fama
+                    if (fileData.salonFama && fileData.salonFama.record) {
+                        masterData.salonFama = masterData.salonFama || { record: {} };
+                        for (let user in fileData.salonFama.record) {
+                            if (!masterData.salonFama.record[user] || fileData.salonFama.record[user].diamonds > masterData.salonFama.record[user].diamonds) {
+                                masterData.salonFama.record[user] = JSON.parse(JSON.stringify(fileData.salonFama.record[user]));
+                            }
+                        }
+                    }
+
+                    // 5. Historial de Nombres
+                    if (fileData.historial) {
+                        masterData.historial = Array.from(new Set([...(masterData.historial || []), ...fileData.historial]));
+                    }
+
+                } catch (err) {
+                    console.error("Error al procesar el archivo:", files[i].name, err);
+                }
+            }
+
+            // Una vez terminada la magia, enviamos el archivo resultante al servidor
+            socket.emit('importar_historial', masterData);
+            mostrarMensaje(`✅ ¡Los ${files.length} archivos fueron unificados con éxito! Base de datos actualizada con los mejores récords.`, "#00ff66", "#003311");
+            
+            // Limpiamos el input
+            event.target.value = '';
+        }
+
+        function descargarDebug() {
+            if (!currentConfig) {
+                mostrarMensaje("⚠️ Aún no hay datos para el debug...", "#ff003c", "#330000"); return;
+            }
+
+            let report = "=== REPORTE DE DEBUG Y RENDIMIENTO - LAGATI APP ===\n\n";
+            report += "Fecha del reporte: " + new Date().toLocaleString() + "\n";
+            report += "Navegador: " + navigator.userAgent + "\n\n";
+
+            const rawSize = new Blob([JSON.stringify(currentConfig)]).size;
+            const kbSize = (rawSize / 1024).toFixed(2);
+            
+            report += "📦 TAMAÑO DE LA BASE DE DATOS EN MEMORIA:\n";
+            report += "Peso total del JSON: " + kbSize + " KB\n\n";
+
+            report += "🔍 CONTEO DE REGISTROS HISTÓRICOS:\n";
+            report += "- Top VIP (Donadores): " + Object.keys(currentConfig.topVIP?.recordHistorico || {}).length + "\n";
+            report += "- Top Likes: " + Object.keys(currentConfig.topLikes?.recordHistorico || {}).length + "\n";
+            report += "- Racha Versus (Salvadas): " + Object.keys(currentConfig.rachaVersus?.salvadas || {}).length + "\n";
+            report += "- Racha Versus (Reinicios): " + Object.keys(currentConfig.rachaVersus?.reinicios || {}).length + "\n";
+            report += "- Salón de la Fama: " + Object.keys(currentConfig.salonFama?.record || {}).length + "\n\n";
+
+            ejecutarDescarga(report, `debug_lagati_${Date.now()}.txt`, "text/plain");
+            mostrarMensaje("✅ Reporte Debug descargado.", "#ffaa00", "#332200");
+        }
+
+        function ejecutarDescarga(dataStr, fileName, mimeType) {
+            const blob = new Blob([dataStr], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function mostrarMensaje(msg, colorTxt, colorBg) {
+            const el = document.getElementById("status-msg");
+            el.style.display = "block";
+            el.style.color = colorTxt;
+            el.style.backgroundColor = colorBg;
+            el.style.border = `1px solid ${colorTxt}`;
+            el.innerText = msg;
+            setTimeout(() => el.style.display = "none", 5000);
+        }
+    </script>
+</body>
+</html>

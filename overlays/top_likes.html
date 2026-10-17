@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+        
+        body { 
+            margin: 0; padding: 20px; overflow: hidden; 
+            font-family: 'Montserrat', sans-serif;
+            background: transparent; 
+        }
+
+        .ranking-container {
+            display: flex; flex-direction: column; gap: 15px;
+            width: 350px;
+        }
+
+        .user-row {
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .user-row.mirror {
+            flex-direction: row-reverse;
+        }
+        .user-row.mirror .info-col {
+            align-items: flex-end; 
+        }
+        .user-row.mirror .name-row {
+            flex-direction: row-reverse;
+        }
+
+        .rank-badge {
+            width: 28px; height: 28px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 16px; font-weight: 900; 
+            color: #fff; 
+            background: transparent; 
+            box-shadow: none;
+        }
+
+        .rank-1 .rank-badge { color: #000; border-radius: 6px; background: linear-gradient(135deg, #ffdf00, #d4af37); box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+        .rank-2 .rank-badge { color: #000; border-radius: 6px; background: linear-gradient(135deg, #e6e6e6, #a6a6a6); box-shadow: 0 0 10px rgba(230, 230, 230, 0.4); }
+        .rank-3 .rank-badge { color: #000; border-radius: 6px; background: linear-gradient(135deg, #ffb366, #b87333); box-shadow: 0 0 10px rgba(255, 179, 102, 0.4); }
+
+        .avatar-container {
+            position: relative;
+            width: 50px; height: 50px;
+        }
+
+        .avatar { 
+            box-sizing: border-box; 
+            width: 100%; height: 100%; 
+            border-radius: 50%; object-fit: cover; 
+            border: 2px solid transparent; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .rank-1 .avatar { border-color: #ffd700; }
+        .rank-2 .avatar { border-color: #c0c0c0; }
+        .rank-3 .avatar { border-color: #cd7f32; }
+
+        .crown {
+            position: absolute;
+            top: -20px; left: 50%;
+            transform: translateX(-50%);
+            color: #ffd700;
+            font-size: 26px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.9), 0 0 10px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+        }
+
+        .info-col { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+        .name-row { display: flex; align-items: center; gap: 6px; }
+        
+        .name { 
+            color: #fff; font-size: 16px; font-weight: 900; 
+            text-transform: uppercase; white-space: nowrap;
+            text-shadow: 0 0 6px rgba(138, 43, 226, 0.8), 2px 2px 2px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+        }
+
+        .likes-row {
+            display: flex; align-items: center; gap: 6px;
+            color: #ffd700; 
+            font-size: 16px; font-weight: 900;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+        }
+        .heart-icon { color: #ff003c; font-size: 14px; text-shadow: 0 0 5px rgba(255,0,60,0.5); }
+
+        .dummy-row {
+            opacity: 0.4; 
+            filter: grayscale(100%);
+        }
+        .dummy-row .name {
+            color: #aaa;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            font-size: 14px;
+        }
+        .dummy-row .likes-row, .dummy-row .heart-icon {
+            color: #888;
+            text-shadow: none;
+        }
+        .dummy-row .avatar {
+            border-color: #444 !important;
+            box-shadow: none !important;
+            background: #222;
+        }
+        .dummy-row .rank-badge {
+            background: #222 !important;
+            color: #666 !important;
+            box-shadow: none !important;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="ranking-container" id="ranking-box">
+        <!-- Generado dinámicamente -->
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const container = document.getElementById('ranking-box');
+
+        const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 32 32' fill='%23666'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+        function formatNumber(num) {
+            if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            return num.toLocaleString();
+        }
+
+        socket.on('top_likes_data_update', (data) => {
+            if(!data) return;
+            container.innerHTML = '';
+            
+            let arrRonda = Object.entries(data.currentRound).map(([u, d]) => ({userKey: u, ...d})).sort((a,b) => b.likes - a.likes);
+            let limit = 5; 
+            let mirrorClass = data.mirrorMode ? 'mirror' : '';
+
+            for (let i = 0; i < limit; i++) {
+                let u = arrRonda[i];
+                let rankClass = i < 3 ? `rank-${i + 1}` : 'rank-x';
+
+                if (u) {
+                    let crownHtml = (i === 0) ? '<i class="fa-solid fa-crown crown"></i>' : '';
+
+                    container.innerHTML += `
+                    <div class="user-row ${rankClass} ${mirrorClass}">
+                        <div class="rank-badge">${i + 1}</div>
+                        <div class="avatar-container">
+                            ${crownHtml}
+                            <img src="${u.avatar}" class="avatar">
+                        </div>
+                        <div class="info-col">
+                            <div class="name-row"><span class="name">${u.displayName}</span></div>
+                            <div class="likes-row"><i class="fa-solid fa-heart heart-icon"></i> ${formatNumber(u.likes)}</div>
+                        </div>
+                    </div>`;
+                } else {
+                    container.innerHTML += `
+                    <div class="user-row ${rankClass} dummy-row ${mirrorClass}">
+                        <div class="rank-badge">${i + 1}</div>
+                        <div class="avatar-container">
+                            <img src="${defaultAvatar}" class="avatar">
+                        </div>
+                        <div class="info-col">
+                            <div class="name-row"><span class="name">ESPERANDO TOP ${i + 1}</span></div>
+                            <div class="likes-row"><i class="fa-solid fa-heart heart-icon"></i> 0</div>
+                        </div>
+                    </div>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

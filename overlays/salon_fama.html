@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,800;0,900;1,800;1,900&family=Luckiest+Guy&display=swap');
+        
+        body { 
+            margin: 0; 
+            padding: 25px; 
+            overflow: hidden; 
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: transparent; 
+        }
+
+        .fama-container {
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            width: 100%; 
+            box-sizing: border-box;
+            transition: all 0.5s ease;
+        }
+
+        .ranking-box {
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            width: 100%; 
+            transition: all 0.5s ease;
+        }
+
+        .fama-title {
+            color: #fff;
+            font-family: 'Luckiest Guy', cursive;
+            font-size: 26px;
+            letter-spacing: 2px;
+            text-shadow: 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000, 2px 4px 8px rgba(0,0,0,0.8);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            transition: all 0.5s ease;
+        }
+
+        .record-row {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(90deg, #0d2bc4 0%, #1c1e30 65%, #181a26 100%);
+            border-radius: 50px;
+            padding: 4px 20px 4px 4px;
+            width: fit-content;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            animation: slideIn 0.4s ease-out forwards;
+            white-space: nowrap;
+        }
+
+        .avatar-wrapper {
+            background: #0a0b0e;
+            border-radius: 50%;
+            padding: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 12px;
+        }
+
+        .avatar { 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            opacity: 0.95;
+        }
+
+        .user-name {
+            font-weight: 800; 
+            font-size: 15px;
+            margin-right: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            letter-spacing: -0.3px;
+        }
+
+        .action-text {
+            font-weight: 500;
+            font-size: 14px;
+            color: #a0a5b5; 
+            margin-right: 10px;
+            letter-spacing: -0.2px;
+        }
+
+        .gift-img {
+            width: 38px; 
+            height: 38px;
+            object-fit: contain;
+            margin-right: 8px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            transform: scale(1.1);
+        }
+
+        .coin-value {
+            font-weight: 900;
+            font-style: italic; 
+            font-size: 16px;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 2px;
+        }
+
+        .tiktok-coin {
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle at 30% 30%, #ffeb99, #ffd700, #b38000);
+            border-radius: 50%;
+            border: 1px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .dummy-row { 
+            opacity: 0.4; 
+            filter: grayscale(100%); 
+            background: rgba(30, 30, 40, 0.8); 
+        }
+        .dummy-row .avatar-wrapper { background: #111; }
+        .dummy-row .user-name { color: #aaa !important; }
+        .dummy-row .tiktok-coin { filter: grayscale(100%); opacity: 0.5; }
+
+        @keyframes slideIn { 
+            0% { transform: translateY(-10px); opacity: 0; } 
+            100% { transform: translateY(0); opacity: 1; } 
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="fama-container" id="fama-container">
+        <div class="fama-title" id="fama-title">Top Regalos Canal</div>
+        <div id="ranking-box" class="ranking-box">
+            <!-- Generado dinámicamente -->
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const container = document.getElementById('ranking-box');
+        const famaContainer = document.getElementById('fama-container');
+        const famaTitle = document.getElementById('fama-title');
+
+        const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 32 32' fill='%23666'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+        socket.on('salon_fama_update', (data) => {
+            if(!data || !data.record) return;
+
+            let alignment = data.alignment || 'left';
+            if (alignment === 'center') {
+                famaContainer.style.alignItems = 'center';
+                container.style.alignItems = 'center';
+                famaTitle.style.textAlign = 'center';
+                famaTitle.style.marginLeft = '0px';
+                famaTitle.style.marginRight = '0px';
+            } else if (alignment === 'right') {
+                famaContainer.style.alignItems = 'flex-end';
+                container.style.alignItems = 'flex-end';
+                famaTitle.style.textAlign = 'right';
+                famaTitle.style.marginLeft = '0px';
+                famaTitle.style.marginRight = '10px';
+            } else {
+                famaContainer.style.alignItems = 'flex-start';
+                container.style.alignItems = 'flex-start';
+                famaTitle.style.textAlign = 'left';
+                famaTitle.style.marginLeft = '10px';
+                famaTitle.style.marginRight = '0px';
+            }
+
+            container.innerHTML = '';
+            
+            let arrRonda = Object.entries(data.record).map(([u, d]) => ({userKey: u, ...d})).sort((a,b) => b.diamonds - a.diamonds);
+            let limit = data.displayLimit || 5; 
+
+            for (let i = 0; i < limit; i++) {
+                let u = arrRonda[i];
+                let nameColor = (i % 2 !== 0) ? '#00f2fe' : '#ffffff'; 
+
+                if (u) {
+                    let imgRegalo = u.giftImage && u.giftImage !== "" ? `<img src="${u.giftImage}" class="gift-img">` : `<i class="fa-solid fa-gift gift-img" style="color:#aaa; display:flex; align-items:center; justify-content:center; font-size:22px;"></i>`;
+                    let textoAccion = `envió ${u.giftName || 'Regalo'}`;
+
+                    container.innerHTML += `
+                    <div class="record-row">
+                        <div class="avatar-wrapper">
+                            <img src="${u.avatar}" class="avatar" onerror="this.src='${defaultAvatar}'">
+                        </div>
+                        <span class="user-name" style="color: ${nameColor};">${u.name}</span>
+                        <span class="action-text">${textoAccion}</span>
+                        ${imgRegalo}
+                        <span class="coin-value"><div class="tiktok-coin"></div>${u.diamonds.toLocaleString()}</span>
+                    </div>`;
+                } else {
+                    container.innerHTML += `
+                    <div class="record-row dummy-row">
+                        <div class="avatar-wrapper">
+                            <img src="${defaultAvatar}" class="avatar">
+                        </div>
+                        <span class="user-name">VACÍO</span>
+                        <span class="action-text">envió Nada</span>
+                        <i class="fa-solid fa-gift gift-img" style="color:#555; display:flex; align-items:center; justify-content:center; font-size:22px;"></i>
+                        <span class="coin-value"><div class="tiktok-coin"></div>0</span>
+                    </div>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

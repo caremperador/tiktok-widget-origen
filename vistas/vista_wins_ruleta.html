@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; }
+        .box { background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-width: 900px; margin-bottom: 30px;}
+        h3 { color: #fff; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 18px; }
+        
+        .top-row { display: flex; gap: 40px; align-items: flex-start; margin-bottom: 25px;}
+        .col-layout { display: flex; gap: 30px; }
+        .team-col { flex: 1; display: flex; flex-direction: column; gap: 15px; padding: 25px; border-radius: 8px; border: 1px solid #333; background: #222;}
+        
+        label { font-weight: bold; font-size: 12px; text-transform: uppercase;}
+        input[type="text"], input[type="number"], select { width: 100%; background: #000; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 12px; font-size: 14px; box-sizing: border-box; }
+        input:focus { border-color: #00f2fe; outline: none;}
+        
+        .btn-add { background: #444; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;}
+        .btn-add:hover { background: #555; }
+        
+        .assigned-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .assigned-item { background: #111; border: 1px solid #555; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: flex; gap: 10px; align-items: center;}
+        .btn-remove { background: none; border: none; cursor: pointer; padding: 0; font-weight: bold;}
+        
+        .btn-guardar { width: 100%; padding: 18px; background: #00f2fe; color: black; font-size: 16px; font-weight: bold; border: none; cursor: pointer; border-radius: 8px; text-transform: uppercase;}
+        .btn-guardar:hover { filter: brightness(1.1);}
+        
+        .overlay-bar { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-overlay { flex: 1; padding: 12px 5px; background: #222; color: #00f2fe; font-size: 13px; font-weight: bold; border: 1px solid #00f2fe; cursor: pointer; border-radius: 8px;}
+        .btn-overlay:hover { background: #00f2fe; color: black;}
+
+        .manual-points-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 5px; }
+        .mp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+        .mp-title { color:#aaa; font-weight:bold; font-size:12px; text-transform:uppercase;}
+        .mp-score { font-size:24px; font-weight:900; text-shadow: 1px 1px 0 #000;}
+        .btn-mp { border:none; border-radius:6px; font-weight:bold; cursor:pointer; padding: 10px 15px; font-size: 14px;}
+        
+        .test-btns { display: flex; gap: 10px; margin-top: 10px;}
+    </style>
+</head>
+<body>
+    <div class="box" style="border-color: #00f2fe; box-shadow: 0 5px 15px rgba(0,242,254,0.2);">
+        <h3 style="color: #00f2fe; border-color: #00f2fe;"><i class="fa-solid fa-gamepad"></i> Juego de Wins & Ruleta</h3>
+        
+        <div class="top-row">
+            <div style="flex: 1;">
+                <div class="manual-points-box">
+                    <div class="mp-header">
+                        <span class="mp-title" style="color:#00f2fe;">Meta Global de Wins (Para ganar)</span>
+                    </div>
+                    <input type="number" id="inp-meta" value="5">
+                </div>
+            </div>
+            <div style="flex: 1;">
+                <div class="manual-points-box">
+                    <div class="mp-header">
+                        <span class="mp-title" style="color:#fff;">Wins Actuales en Vivo</span>
+                        <span class="mp-score" id="lbl-wins-actuales" style="color:#fff;">0</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="inp-actuales" placeholder="Modificar Wins">
+                        <button class="btn-mp" style="background:#00f2fe; color:black;" onclick="guardarEstadoManual(event)">Establecer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-layout">
+            <!-- Columna Sumar Wins -->
+            <div class="team-col" style="border-color: #00ff66;">
+                <h4 style="color:#00ff66; margin: 0 0 10px 0;">🟢 Regalos que SUMAN Wins</h4>
+                <p style="color:#aaa; font-size: 11px; margin: 0 0 15px 0;">1 moneda del regalo = +1 Win. El espectador ganará un Pop-up verde en la pantalla.</p>
+                <div style="display: flex; gap: 10px;"><select id="select-sumar"></select><button class="btn-add" onclick="addGift('sumar')">Añadir</button></div>
+                <div class="assigned-list" id="list-sumar"></div>
+                
+                <div class="test-btns">
+                    <button class="btn-mp" style="background:#004d1a; color:#00ff66; width:100%; border: 1px solid #00ff66;" onclick="testPopup('sumar')"><i class="fa-solid fa-vial"></i> Probar Pop-up (+30 Wins)</button>
+                </div>
+            </div>
+
+            <!-- Columna Restar Wins -->
+            <div class="team-col" style="border-color: #ff003c;">
+                <h4 style="color:#ff003c; margin: 0 0 10px 0;">🔴 Regalos que RESTAN Wins</h4>
+                <p style="color:#aaa; font-size: 11px; margin: 0 0 15px 0;">1 moneda del regalo = -1 Win. El espectador ganará un Pop-up rojo en la pantalla.</p>
+                <div style="display: flex; gap: 10px;"><select id="select-restar"></select><button class="btn-add" onclick="addGift('restar')">Añadir</button></div>
+                <div class="assigned-list" id="list-restar"></div>
+                
+                <div class="test-btns">
+                    <button class="btn-mp" style="background:#4d0012; color:#ff003c; width:100%; border: 1px solid #ff003c;" onclick="testPopup('restar')"><i class="fa-solid fa-vial"></i> Probar Pop-up (-30 Wins)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="manual-points-box" style="margin-top: 25px; border-color: #ffd700;">
+            <h4 style="color:#ffd700; margin: 0 0 10px 0;"><i class="fa-solid fa-dharmachakra"></i> Evento de Seguidores (La Ruleta)</h4>
+            <p style="color:#aaa; font-size: 12px; margin: 0 0 15px 0;">Cada vez que alguien presiona "Seguir", bajará una ruleta automáticamente que puede sumar o restar wins al azar.</p>
+            
+            <div style="margin-bottom: 15px; display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label style="color:#ffd700;">Cooldown de Ruleta (Segundos)</label>
+                    <input type="number" id="inp-cooldown" placeholder="Ej. 3600 para 1 hora">
+                    <p style="color:#888; font-size: 10px; margin: 5px 0 0 0;">Tiempo para que una misma persona pueda volver a girar la ruleta.</p>
+                </div>
+            </div>
+
+            <!-- 🌟 NUEVO: CONTROL DE SUERTE DE LA RULETA -->
+            <div style="margin-bottom: 20px; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #555;">
+                <label style="color:#00ff66; font-size: 14px;"><i class="fa-solid fa-clover"></i> Control de Suerte (Probabilidad de Sumar Wins)</label>
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                    <span style="font-weight: bold; color: #ff003c;">0%</span>
+                    <input type="range" id="inp-suerte" min="0" max="100" value="50" style="flex: 1; accent-color: #00ff66; cursor: pointer;" oninput="document.getElementById('lbl-suerte').innerText = this.value + '%'">
+                    <span style="font-weight: bold; color: #00ff66;">100%</span>
+                </div>
+                <div style="text-align: center; margin-top: 10px;">
+                    <span style="color: #ccc; font-size: 13px;">Probabilidad de caer en Verde (+): </span>
+                    <span id="lbl-suerte" style="font-weight: 900; color: #00ff66; font-size: 20px;">50%</span>
+                </div>
+                <p style="color:#888; font-size: 11px; margin: 10px 0 0 0; text-align: center;">Ajusta la barra para tener la ruleta a tu favor (Ej: 80% = Casi siempre sumará Wins).</p>
+            </div>
+
+            <button class="btn-mp" style="background:#ffd700; color:black; width:100%; font-size: 16px; padding: 15px;" onclick="testRuleta()"><i class="fa-solid fa-bolt"></i> Disparar Ruleta de Prueba Manualmente</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button class="btn-guardar" onclick="guardarConfig(event)">Guardar Configuración General</button>
+        </div>
+
+        <div class="overlay-bar">
+            <button class="btn-overlay" onclick="window.open('/wins_ruleta', '_blank')"><i class="fa-solid fa-eye"></i> Abrir Overlay Wins</button>
+            <button class="btn-overlay" onclick="copiarURL('/wins_ruleta')"><i class="fa-solid fa-link"></i> Copiar URL para OBS</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let globalGifts = []; 
+        let regalosSumar = []; 
+        let regalosRestar = [];
+        
+        function renderDropdowns() {
+            let s1 = document.getElementById('select-sumar'); 
+            let s2 = document.getElementById('select-restar');
+            let val1 = s1.value; let val2 = s2.value;
+            s1.innerHTML = ''; s2.innerHTML = '';
+            
+            globalGifts.forEach(g => { 
+                let enSumar = regalosSumar.some(r => r.id === g.id);
+                let enRestar = regalosRestar.some(r => r.id === g.id);
+                
+                let opt1 = `<option value="${g.id}" ${enSumar?'style="background:#004d1a;color:#00ff66;"':''}>[ID: ${g.id}] ${g.name} (${g.diamonds} Monedas) ${enSumar?'✅':''}</option>`; 
+                let opt2 = `<option value="${g.id}" ${enRestar?'style="background:#4d0012;color:#ff003c;"':''}>[ID: ${g.id}] ${g.name} (${g.diamonds} Monedas) ${enRestar?'✅':''}</option>`; 
+                
+                s1.innerHTML += opt1; s2.innerHTML += opt2; 
+            });
+
+            if(val1) s1.value = val1; if(val2) s2.value = val2;
+        }
+
+        socket.on('config_actual', (config) => {
+            if(config.winsRuleta) {
+                regalosSumar = config.winsRuleta.regalosSumar || [];
+                regalosRestar = config.winsRuleta.regalosRestar || [];
+                
+                document.getElementById('inp-cooldown').value = config.winsRuleta.cooldown !== undefined ? config.winsRuleta.cooldown : 3600;
+                
+                let prob = config.winsRuleta.probabilidad !== undefined ? config.winsRuleta.probabilidad : 50;
+                document.getElementById('inp-suerte').value = prob;
+                document.getElementById('lbl-suerte').innerText = prob + '%';
+            }
+            globalGifts = config.regalosDisponibles || []; 
+            renderDropdowns();
+            renderList('sumar'); renderList('restar');
+        });
+
+        socket.on('wins_ruleta_update', (estado) => {
+            document.getElementById('lbl-wins-actuales').innerText = estado.actuales;
+            document.getElementById('inp-actuales').value = estado.actuales;
+            document.getElementById('inp-meta').value = estado.meta;
+        });
+
+        function renderList(tipo) {
+            let container = document.getElementById(tipo === 'sumar' ? 'list-sumar' : 'list-restar');
+            let arr = tipo === 'sumar' ? regalosSumar : regalosRestar; 
+            let colorBtn = tipo === 'sumar' ? '#00ff66' : '#ff003c';
+            container.innerHTML = '';
+            arr.forEach(g => { 
+                container.innerHTML += `<div class="assigned-item" style="border-color:${colorBtn}"><span>${g.name} (<i class="fa-solid fa-coins"></i> ${g.diamonds})</span><button class="btn-remove" style="color:${colorBtn};" onclick="removeGift('${tipo}', ${g.id})"><i class="fa-solid fa-xmark"></i></button></div>`; 
+            });
+        }
+
+        function addGift(tipo) {
+            let sel = document.getElementById(tipo === 'sumar' ? 'select-sumar' : 'select-restar');
+            if(!sel.value) return;
+            let gift = globalGifts.find(g => g.id === parseInt(sel.value));
+            let arr = tipo === 'sumar' ? regalosSumar : regalosRestar;
+            if (!arr.some(g => g.id === gift.id)) { 
+                arr.push(gift); renderList(tipo); renderDropdowns(); guardarConfig(null); 
+            }
+        }
+
+        function removeGift(tipo, id) {
+            if (tipo === 'sumar') regalosSumar = regalosSumar.filter(g => g.id !== id); 
+            else regalosRestar = regalosRestar.filter(g => g.id !== id);
+            renderList(tipo); renderDropdowns(); guardarConfig(null); 
+        }
+
+        function guardarConfig(event) {
+            let cd = parseInt(document.getElementById('inp-cooldown').value) || 3600;
+            let prob = parseInt(document.getElementById('inp-suerte').value);
+            
+            socket.emit('guardar_config_wins_ruleta', { 
+                regalosSumar: regalosSumar, 
+                regalosRestar: regalosRestar, 
+                cooldown: cd,
+                probabilidad: isNaN(prob) ? 50 : prob
+            });
+            
+            if (event && event.target && event.target.tagName === 'BUTTON') {
+                let btn = event.target;
+                let old = btn.innerText;
+                btn.innerText = "¡Guardado!";
+                setTimeout(() => btn.innerText = old, 1500);
+            }
+        }
+
+        function guardarEstadoManual(event) {
+            let acts = document.getElementById('inp-actuales').value;
+            let met = document.getElementById('inp-meta').value;
+            socket.emit('update_wins_estado', { actuales: acts, meta: met });
+
+            if (event && event.target && event.target.tagName === 'BUTTON') {
+                let btn = event.target;
+                let old = btn.innerText;
+                btn.innerText = "¡Listo!";
+                setTimeout(() => btn.innerText = old, 1500);
+            }
+        }
+
+        function testPopup(tipo) {
+            let isSumar = tipo === 'sumar';
+            let amount = isSumar ? 30 : -30;
+            socket.emit('test_wins_popup', {
+                name: "PruebaPopUp",
+                avatar: `https://ui-avatars.com/api/?name=PR&background=${isSumar?'00ff66':'ff003c'}&color=fff`,
+                amount: amount,
+                type: tipo
+            });
+        }
+
+        function testRuleta() {
+            // Lee la probabilidad actual del panel para el testeo
+            let probPositiva = parseInt(document.getElementById('inp-suerte').value) || 50;
+            
+            let posOptions = [1, 50, 100, 200, 500, 1000];
+            let negOptions = [-1, -50, -100, -200, -500, -1000];
+            
+            let roll = Math.random() * 100;
+            let chosenArray = (roll < probPositiva) ? posOptions : negOptions;
+            let res = chosenArray[Math.floor(Math.random() * chosenArray.length)];
+            
+            socket.emit('test_wins_ruleta', {
+                name: "NuevoSeguidor",
+                avatar: "https://ui-avatars.com/api/?name=N+S&background=ffd700&color=000",
+                result: res
+            });
+        }
+
+        function copiarURL(path) {
+            navigator.clipboard.writeText(window.location.origin + path);
+            alert("✅ Enlace copiado: " + window.location.origin + path + "\n\nPégalo como Navegador en OBS.");
+        }
+    </script>
+</body>
+</html>

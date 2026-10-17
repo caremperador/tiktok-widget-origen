@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+        
+        body { 
+            margin: 0; padding: 20px; overflow: hidden; 
+            font-family: 'Montserrat', sans-serif;
+            background: transparent; 
+        }
+
+        .ranking-container {
+            display: flex; flex-direction: column; gap: 20px;
+            width: 380px;
+        }
+
+        .user-row {
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .rank-badge {
+            width: 28px; height: 28px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 16px; font-weight: 900; 
+            color: #fff; 
+            background: transparent; 
+            box-shadow: none;
+        }
+
+        .rank-1 .rank-badge { color: #000; border-radius: 6px; background: linear-gradient(135deg, #ffdf00, #d4af37); box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+        .rank-2 .rank-badge { color: #000; border-radius: 6px; background: linear-gradient(135deg, #e6e6e6, #a6a6a6); box-shadow: 0 0 10px rgba(230, 230, 230, 0.4); }
+        .rank-3 .rank-badge { color: #000; border-radius: 6px; background: linear-gradient(135deg, #ffb366, #b87333); box-shadow: 0 0 10px rgba(255, 179, 102, 0.4); }
+        .rank-x .rank-badge { color: #fff; border-radius: 6px; background: linear-gradient(135deg, #555, #333); box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        .avatar-container {
+            position: relative;
+            width: 50px; height: 50px;
+        }
+
+        .avatar { 
+            box-sizing: border-box; 
+            width: 100%; height: 100%; 
+            border-radius: 50%; object-fit: cover; 
+            border: 2px solid transparent; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .rank-1 .avatar { border: 2px solid #ffd700; box-shadow: 0 0 15px #ffd700; }
+        .rank-2 .avatar { border: 2px solid #ffaa00; box-shadow: 0 0 15px #ffaa00; }
+        .rank-3 .avatar { border-color: #cd7f32; }
+        .rank-x .avatar { border: 2px solid #555; }
+
+        .crown {
+            position: absolute;
+            top: -20px; left: 50%;
+            transform: translateX(-50%);
+            color: #ffd700;
+            font-size: 26px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.9), 0 0 10px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+        }
+
+        .ribbon-img {
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75px; 
+            z-index: 15;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+        }
+
+        .info-col { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+        
+        .name-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            flex-wrap: nowrap;
+            white-space: nowrap; 
+        }
+        
+        .name { 
+            color: #fff; font-size: 16px; font-weight: 900; 
+            text-transform: uppercase; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 130px; 
+            text-shadow: 0 0 6px rgba(138, 43, 226, 0.8), 2px 2px 2px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+        }
+
+        .name-gold {
+            color: #ffd700 !important;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 2px 2px 2px rgba(0,0,0,0.9) !important;
+        }
+
+        .streak-badge {
+            display: flex; align-items: center; gap: 4px;
+            background: rgba(30, 30, 30, 0.3);
+            color: white;
+            font-size: 13px; font-weight: 900;
+            padding: 1px 6px; border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .likes-row {
+            display: flex; align-items: center; gap: 6px;
+            color: #ffd700; font-size: 16px; font-weight: 900;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+        }
+
+        .coin-icon {
+            color: #ffd700; font-size: 14px;
+            text-shadow: 0 0 5px rgba(255,215,0,0.5);
+        }
+
+        .has-streak .avatar {
+            border: 3px solid #ffd700; 
+            box-shadow: 0 0 10px #ffd700, 0 0 20px #ff8c00;
+            animation: pulse-border 1.2s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 10px #ffd700, 0 0 20px #ff8c00; border-color: #ffd700; }
+            100% { box-shadow: 0 0 20px #ffd700, 0 0 35px #ff003c; border-color: #ffb300; }
+        }
+
+        .dummy-row { opacity: 0.4; filter: grayscale(100%); }
+        .dummy-row .name { color: #aaa; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-size: 14px; }
+        .dummy-row .likes-row, .dummy-row .coin-icon { color: #888; text-shadow: none; }
+        .dummy-row .avatar { border-color: #444 !important; box-shadow: none !important; background: #222; }
+        .dummy-row .rank-badge { background: #222 !important; color: #666 !important; box-shadow: none !important; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="ranking-container" id="ranking-box">
+        <!-- Generado dinámicamente -->
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const container = document.getElementById('ranking-box');
+
+        function formatNumber(num) { return num.toLocaleString(); }
+
+        socket.on('top_vip_data_update', (data) => {
+            if(!data || !data.recordHistorico) return;
+            container.innerHTML = '';
+            
+            let arrHist = Object.entries(data.recordHistorico).map(([u, d]) => ({userKey: u, ...d})).sort((a,b) => b.wins - a.wins);
+            let limit = 10; 
+
+            for (let i = 0; i < limit; i++) {
+                let u = arrHist[i];
+                let rankClass = i < 3 ? `rank-${i + 1}` : 'rank-x';
+
+                if (u && u.wins > 0) {
+                    let wins = u.wins;
+                    let streak = u.streak || 0;
+                    
+                    let streakHtml = streak > 0 ? `<span class="streak-badge"><span style="font-size: 16px; margin-right: 2px;">🔥</span> x${streak}</span>` : '';
+                    let streakClass = streak >= 2 ? 'has-streak' : ''; 
+                    let crownHtml = (i === 0) ? '<i class="fa-solid fa-crown crown"></i>' : '';
+
+                    let ribbonHtml = '';
+                    if (i === 0) {
+                        ribbonHtml = `<img src="https://i.imgur.com/MODY4yr.png" class="ribbon-img">`;
+                    } else if (i === 1) {
+                        ribbonHtml = `<img src="https://i.imgur.com/2pnoeln.png" class="ribbon-img">`;
+                    }
+
+                    let nameClass = (i === 0) ? "name name-gold" : "name";
+                    
+                    // 🌟 SOLUCIÓN A LOS AVATARES CADUCADOS DE TIKTOK
+                    // Limpiamos la URL original por si hay errores y creamos un avatar de respaldo dinámico
+                    let avatarSeguro = u.avatar ? u.avatar.replace(/&amp;/g, '&') : '';
+                    let fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName)}&background=222222&color=fff&size=100&bold=true`;
+
+                    container.innerHTML += `
+                    <div class="user-row ${rankClass} ${streakClass}">
+                        <div class="rank-badge">${i + 1}</div>
+                        <div class="avatar-container">
+                            ${crownHtml}
+                            <img src="${avatarSeguro}" class="avatar" onerror="this.onerror=null; this.src='${fallbackAvatar}';">
+                            ${ribbonHtml}
+                        </div>
+                        <div class="info-col">
+                            <div class="name-row"><span class="${nameClass}">${u.displayName}</span> ${streakHtml}</div>
+                            <div class="likes-row"><i class="fa-solid fa-trophy coin-icon"></i> ${formatNumber(wins)} Victorias</div>
+                        </div>
+                    </div>`;
+                } else {
+                    let fallbackDummy = `https://ui-avatars.com/api/?name=?&background=222222&color=666&size=100`;
+                    container.innerHTML += `
+                    <div class="user-row ${rankClass} dummy-row">
+                        <div class="rank-badge">${i + 1}</div>
+                        <div class="avatar-container">
+                            <img src="${fallbackDummy}" class="avatar">
+                        </div>
+                        <div class="info-col">
+                            <div class="name-row"><span class="name">ESPERANDO GUERRERO</span></div>
+                            <div class="likes-row"><i class="fa-solid fa-trophy coin-icon" style="color:#888;"></i> 0 Victorias</div>
+                        </div>
+                    </div>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

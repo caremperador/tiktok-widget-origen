@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+        
+        body { 
+            margin: 0; padding: 30px; overflow: hidden; 
+            background-color: transparent; 
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .ranking-container {
+            display: flex; 
+            flex-direction: column; 
+            gap: 35px;
+            width: 450px;
+        }
+
+        .user-row {
+            display: flex; 
+            align-items: center; 
+            gap: 20px;
+        }
+
+        .row-salvar { animation: floatAngel 4s ease-in-out infinite; }
+        .row-reiniciar { animation: floatDevil 4s ease-in-out infinite 2s; }
+
+        @keyframes floatAngel { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes floatDevil { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        .avatar-container { 
+            position: relative; 
+            width: 110px; 
+            height: 110px; 
+            flex-shrink: 0; 
+        }
+        
+        .avatar { 
+            box-sizing: border-box;
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+            border: 5px solid transparent; position: relative; z-index: 10;
+        }
+        
+        .avatar-salvar { border-color: #00ff66; box-shadow: 0 0 25px #00ff66, inset 0 0 20px #00ff66; }
+        .avatar-reiniciar { border-color: #ff003c; box-shadow: 0 0 25px #ff003c, inset 0 0 20px #ff003c; }
+
+        .halo {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotateX(60deg);
+            width: 80px; height: 30px; border: 5px solid #ffd700; border-radius: 50%;
+            box-shadow: 0 0 15px #ffd700, inset 0 0 15px #ffd700; z-index: 11;
+        }
+
+        .svg-horns {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            width: 110px; height: 55px; 
+            z-index: 5; 
+            filter: drop-shadow(0 0 8px #ff003c);
+        }
+        
+        .tail {
+            position: absolute; bottom: 10px; right: -40px; 
+            z-index: 5; 
+            font-size: 60px; color: #ff003c; text-shadow: 0 0 15px #ff003c;
+            transform: rotate(-10deg);
+        }
+
+        .info-col { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+        .name-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; }
+        
+        .name { 
+            font-size: 26px; font-weight: 900; 
+            text-transform: uppercase; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; max-width: 190px;
+            letter-spacing: 0.5px;
+        }
+
+        .name-salvar { 
+            color: #00ff66; 
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6), 2px 2px 2px rgba(0,0,0,0.9);
+        }
+        .name-reiniciar { 
+            color: #ff003c; 
+            text-shadow: 0 0 8px rgba(255, 0, 60, 0.6), 2px 2px 2px rgba(0,0,0,0.9);
+        }
+
+        .likes-row {
+            display: flex; align-items: center; gap: 8px;
+            color: #ffd700; font-size: 20px; font-weight: 900;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+        }
+
+        .coin-icon {
+            color: #ffd700; font-size: 16px;
+            text-shadow: 0 0 6px rgba(255,215,0,0.6);
+        }
+
+        .badge {
+            display: flex; align-items: center; gap: 5px;
+            color: white; font-size: 14px; font-weight: 900;
+            padding: 3px 8px; border-radius: 6px;
+            letter-spacing: 0.5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .badge-salvar { background: #00cc52; box-shadow: 0 0 8px #00ff66; border: none; }
+        .badge-salvar i { color: #fff; }
+
+        .badge-reiniciar { background: #cc0030; box-shadow: 0 0 8px #ff003c; border: none; }
+        .badge-reiniciar i { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="ranking-container" id="ranking-box">
+        <!-- Generado dinámicamente por JS -->
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let configOpciones = { showName: true, showCount: true, showCoins: true };
+        let histData = { salvadas: {}, reinicios: {} };
+        let currentSalvar = null;
+        let currentReiniciar = null;
+
+        socket.on('racha_versus_update', (data) => {
+            if(!data) return;
+            configOpciones.showName = data.showName !== false;
+            configOpciones.showCount = data.showCount !== false;
+            configOpciones.showCoins = data.showCoins !== false;
+            
+            histData.salvadas = data.salvadas || {};
+            histData.reinicios = data.reinicios || {};
+            renderOverlay();
+        });
+
+        socket.on('actualizacion_salvar', (data) => {
+            if (data.topSalvar && data.topSalvar.name !== 'ESPERANDO') {
+                currentSalvar = data.topSalvar;
+            }
+            if (data.topReiniciar && data.topReiniciar.name !== 'ESPERANDO') {
+                currentReiniciar = data.topReiniciar;
+            }
+            renderOverlay();
+        });
+
+        socket.on('racha_versus_clear_visual', () => {
+            currentSalvar = null;
+            currentReiniciar = null;
+            renderOverlay();
+        });
+
+        function formatNumber(num) { return num.toLocaleString(); }
+
+        function renderOverlay() {
+            let container = document.getElementById('ranking-box');
+            container.innerHTML = '';
+
+            let activeItems = [];
+
+            if (currentSalvar && currentSalvar.name && currentSalvar.name !== 'ESPERANDO') {
+                activeItems.push({ type: 'salvar', data: currentSalvar, coins: currentSalvar.coins || 0 });
+            }
+            if (currentReiniciar && currentReiniciar.name && currentReiniciar.name !== 'ESPERANDO') {
+                activeItems.push({ type: 'reiniciar', data: currentReiniciar, coins: currentReiniciar.coins || 0 });
+            }
+
+            // Ordenamiento dinámico: mayor cantidad de monedas va arriba
+            activeItems.sort((a, b) => b.coins - a.coins);
+
+            activeItems.forEach(item => {
+                if (item.type === 'salvar') {
+                    let sName = item.data.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
+                    let histCount = histData.salvadas[item.data.name] ? histData.salvadas[item.data.name].count : 0;
+                    
+                    let badgesHtml = '';
+                    if (histCount > 0 && configOpciones.showCount) {
+                        badgesHtml = `<span class="badge badge-salvar"><i class="fa-solid fa-shield-halved"></i> x${histCount}</span>`;
+                    }
+                    
+                    let nameHtml = configOpciones.showName ? `<span class="name name-salvar">${sName}</span>` : '';
+                    let coinsHtml = configOpciones.showCoins ? `<div class="likes-row"><i class="fa-solid fa-coins coin-icon"></i> ${formatNumber(item.data.coins)}</div>` : '';
+
+                    container.innerHTML += `
+                    <div class="user-row row-salvar">
+                        <div class="avatar-container">
+                            <div class="halo"></div>
+                            <img src="${item.data.avatar}" class="avatar avatar-salvar" onerror="this.src='https://via.placeholder.com/150/222/fff?text=?'">
+                        </div>
+                        <div class="info-col">
+                            <div class="name-row">${nameHtml} <div style="display:flex; gap:6px; align-items:center;">${badgesHtml}</div></div>
+                            ${coinsHtml}
+                        </div>
+                    </div>`;
+                } else if (item.type === 'reiniciar') {
+                    let rName = item.data.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
+                    let histCount = histData.reinicios[item.data.name] ? histData.reinicios[item.data.name].count : 0;
+                    
+                    let badgesHtml = '';
+                    if (histCount > 0 && configOpciones.showCount) {
+                        badgesHtml = `<span class="badge badge-reiniciar"><i class="fa-solid fa-rotate-left"></i> x${histCount}</span>`;
+                    }
+                    
+                    let nameHtml = configOpciones.showName ? `<span class="name name-reiniciar">${rName}</span>` : '';
+                    let coinsHtml = configOpciones.showCoins ? `<div class="likes-row"><i class="fa-solid fa-coins coin-icon"></i> ${formatNumber(item.data.coins)}</div>` : '';
+
+                    container.innerHTML += `
+                    <div class="user-row row-reiniciar">
+                        <div class="avatar-container">
+                            <svg class="svg-horns" viewBox="0 0 160 80" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M 60,70 C 40,50 15,35 10,10 C 25,25 45,20 55,40 C 58,48 60,60 60,70 Z" fill="#ff003c" stroke="#000" stroke-width="2.5"/>
+                                <path d="M 100,70 C 120,50 145,35 150,10 C 135,25 115,20 105,40 C 102,48 100,60 100,70 Z" fill="#ff003c" stroke="#000" stroke-width="2.5"/>
+                            </svg>
+                            <div class="tail"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                            
+                            <img src="${item.data.avatar}" class="avatar avatar-reiniciar" onerror="this.src='https://via.placeholder.com/150/222/fff?text=?'">
+                        </div>
+                        <div class="info-col">
+                            <div class="name-row">${nameHtml} <div style="display:flex; gap:6px; align-items:center;">${badgesHtml}</div></div>
+                            ${coinsHtml}
+                        </div>
+                    </div>`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
