@@ -9,21 +9,69 @@
         body {
             margin: 0; padding: 0; background-color: transparent; 
             color: white; overflow: hidden;
+            font-family: 'Luckiest Guy', 'Lilita One', cursive, sans-serif;
         }
         
         .widget-wrapper { width: 100vw; height: 100vh; position: relative; }
-        .countdown-line1, .countdown-line2, .countdown-number, #winner-title, #winner-name { paint-order: stroke fill; }
+        
+        .countdown-line1, .countdown-line2, .countdown-number, #winner-title, #winner-name, .eq-num, .eq-label { 
+            paint-order: stroke fill; 
+            -webkit-text-stroke-linejoin: round;
+        }
 
         .countdown-zone {
             position: absolute;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100%; display: none; 
-            flex-direction: column; align-items: center; justify-content: center; animation: emerge 0.5s ease-out;
+            width: 100%; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            animation: emerge 0.4s ease-out;
         }
         
-        .countdown-line1 { font-weight: 900; letter-spacing: 2px; margin-bottom: -5px; z-index: 2; transition: color 0.3s; text-align: center;}
-        .countdown-line2 { font-weight: 900; letter-spacing: 3px; margin-bottom: -20px; z-index: 2; animation: flashRed 1s infinite;}
-        .countdown-number { font-weight: 900; animation: heartbeat 1s infinite; line-height: 1;}
+        .countdown-line1 { 
+            font-weight: 900; letter-spacing: 2px; margin-bottom: 5px; z-index: 2; 
+            text-align: center; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Diseño exacto a la imagen: [NÚMERO AMARILLO] [IMAGEN] [= TEXTO BLANCO] */
+        .equation-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        .eq-num {
+            color: #ffea00; /* Amarillo intenso igual a la referencia */
+            line-height: 1;
+            display: inline-block;
+            font-size: 1.08em;
+        }
+
+        .eq-gift-img {
+            height: 1.45em; /* Se ajusta automáticamente al tamaño del texto */
+            width: auto;
+            min-height: 55px;
+            max-height: 130px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.65));
+        }
+
+        .eq-label {
+            color: #ffffff; /* Blanco puro igual a "= RESET" */
+            line-height: 1;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .countdown-line2 { 
+            font-weight: 900; letter-spacing: 3px; margin-top: 2px; margin-bottom: -15px; 
+            z-index: 2; animation: flashRed 1s infinite; text-align: center; display: none;
+        }
+        
+        .countdown-number { 
+            font-weight: 900; animation: heartbeat 1s infinite; line-height: 1; margin-top: 8px; display: none;
+        }
 
         #winner-zone {
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -45,7 +93,7 @@
 
         @keyframes flashRed { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5); } }
         @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes emerge { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes emerge { 0% { opacity: 0; transform: translate(-50%, -40%); } 100% { opacity: 1; transform: translate(-50%, -50%); } }
         @keyframes heartbeat { 0%, 30%, 100% { transform: scale(1); } 15% { transform: scale(1.15); } }
 
         #canvas-effects { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
@@ -55,10 +103,12 @@
     <canvas id="canvas-effects"></canvas>
     
     <div class="widget-wrapper">
-
         <div class="countdown-zone" id="countdown-display">
-            <div class="countdown-line1" id="countdown-line1-text">XX PARA SALVARNOS</div>
+            <!-- Línea 1: 2 [Imagen] = RESET / SALVAR -->
+            <div class="countdown-line1" id="countdown-line1-text"></div>
+            <!-- Línea 2: REINICIANDO EN (Opcional según tu tamaño) -->
             <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
+            <!-- Línea 3: Cuenta atrás abajo -->
             <div class="countdown-number" id="timer">30</div>
             
             <div id="winner-zone">
@@ -78,7 +128,7 @@
         let audioCtx = null;
         let isGameOver = false; 
         let wasLosing = false;
-        let latestData = null; 
+        let latestData = { totalSalvar: 0, totalReiniciar: 0 }; 
 
         function playAlertSound() {
             try {
@@ -112,41 +162,43 @@
             } catch(e) {}
         }
 
-        function applyDesign(style, eqColors) {
-            if (!style || !eqColors) return;
-            document.body.style.fontFamily = style.fontFamily;
-            const strokedElements = document.querySelectorAll('.countdown-line1, .countdown-line2');
-            strokedElements.forEach(el => el.style.webkitTextStroke = style.textStroke + "px black");
-            document.getElementById('timer').style.webkitTextStroke = (style.textStroke * 2.5) + "px black";
+        function applyDesign(style) {
+            if (!style) return;
+            // Usa la fuente de tu panel o Luckiest Guy por defecto (igual a la foto)
+            document.body.style.fontFamily = style.fontFamily || "'Luckiest Guy', cursive";
+            
+            // Borde negro grueso y nítido como en la imagen
+            let baseStroke = parseFloat(style.textStroke) || 2.5;
+            let strokePx = Math.max(baseStroke * 3.5, 6); 
 
             const l1 = document.getElementById('countdown-line1-text');
-            l1.style.color = style.colorL1; l1.style.fontSize = style.sizeL1 + "px";
+            l1.style.fontSize = (style.sizeL1 || 52) + "px";
+            l1.style.webkitTextStroke = strokePx + "px #000000";
+
             const l2 = document.getElementById('countdown-line2-text');
-            l2.style.color = style.colorL2; l2.style.fontSize = style.sizeL2 + "px";
+            l2.style.color = style.colorL2 || "#ff003c"; 
+            l2.style.fontSize = (style.sizeL2 || 38) + "px";
+            l2.style.webkitTextStroke = (strokePx * 0.8) + "px #000000";
+
             const lt = document.getElementById('timer');
-            lt.style.color = style.colorTimer; lt.style.fontSize = style.sizeTimer + "px";
+            lt.style.color = style.colorTimer || "#ffffff"; 
+            lt.style.fontSize = (style.sizeTimer || 120) + "px";
+            lt.style.webkitTextStroke = (strokePx * 1.4) + "px #000000";
 
-            const c1 = eqColors.c1 || '#00ff66'; const c2 = eqColors.c2 || '#ff003c';
-
-            const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 1.0;
+            const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 0.9;
             const dist = style.shadowDistance !== undefined ? style.shadowDistance : 4;
             const shadowColor = `rgba(0,0,0,${op})`;
             
-            const elementsWithShadow = [
-                {el: l1}, {el: l2}, {el: lt, extra: `0 0 40px #ff003c`}
-            ];
-            elementsWithShadow.forEach(item => {
-                if(!item.el) return;
-                let textShadowStr = `${dist}px ${dist}px 0px ${shadowColor}`;
-                if(item.extra) textShadowStr += `, ${item.extra}`;
-                item.el.style.textShadow = textShadowStr;
-            });
+            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px ${shadowColor}`;
+            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist}px 6px ${shadowColor}`;
+            lt.style.textShadow = `0px ${dist + 2}px 0px #000000, 0 0 30px #ff003c`;
         }
 
         socket.on('config_actual', (config) => {
             if(!config.unidades) return;
             currentConfig = config.unidades;
-            applyDesign(currentConfig.battleStyle, {c1: currentConfig.equipo1.color, c2: currentConfig.equipo2.color});
+            applyDesign(currentConfig.battleStyle);
+            procesarActualizacionVisual(latestData);
         });
 
         function triggerGameOver(topReiniciar) {
@@ -188,8 +240,7 @@
             const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
             
-            let shadowStr = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c2}`;
-            winnerTitle.style.textShadow = shadowStr;
+            winnerTitle.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c2}`;
             winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`; 
 
             document.getElementById('winner-zone').style.display = 'flex';
@@ -232,8 +283,7 @@
             
             const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
-            let shadowStr = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c1}`;
-            winnerTitle.style.textShadow = shadowStr;
+            winnerTitle.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c1}`;
             winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
 
             document.getElementById('winner-zone').style.display = 'flex';
@@ -253,21 +303,35 @@
             procesarActualizacionVisual(data);
         });
 
-        function procesarActualizacionVisual(data) {
-            if(!currentConfig) return;
-            let total = data.totalSalvar + data.totalReiniciar;
-            if (isGameOver) return; 
-
-            if (total === 0) {
-                wasLosing = false; 
-                document.getElementById('winner-zone').style.display = 'none';
-                document.getElementById('countdown-display').style.display = 'none';
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+        function renderEquationHTML(amount, imgUrl, fallbackName, actionWord) {
+            if (imgUrl && imgUrl !== "") {
+                return `
+                    <div class="equation-row">
+                        <span class="eq-num">${amount}</span>
+                        <img src="${imgUrl}" class="eq-gift-img">
+                        <span class="eq-label">= ${actionWord}</span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="equation-row">
+                        <span class="eq-num">${amount}</span>
+                        <span class="eq-label">${fallbackName} = ${actionWord}</span>
+                    </div>
+                `;
             }
+        }
 
-            let isLosing = data.totalReiniciar > data.totalSalvar;
+        function procesarActualizacionVisual(data) {
+            if(!currentConfig || isGameOver) return;
+
+            let salvarPts = data ? (data.totalSalvar || 0) : 0;
+            let reiniciarPts = data ? (data.totalReiniciar || 0) : 0;
+
+            let isLosing = reiniciarPts > salvarPts;
             
-            if (wasLosing && !isLosing && data.totalSalvar > 0) {
+            // Si estábamos perdiendo y nos acaban de empatar/superar con regalo en vivo
+            if (wasLosing && !isLosing && salvarPts > 0) {
                 wasLosing = false; 
                 if (data.topSalvar && data.topSalvar.name !== 'ESPERANDO' && data.topSalvar.name !== 'MANUAL') {
                     triggerSaved(data.topSalvar);
@@ -281,68 +345,55 @@
             let line2 = document.getElementById('countdown-line2-text');
             let timerEl = document.getElementById('timer');
             
-            if (currentConfig.enableCountdown && data.totalReiniciar > data.totalSalvar) {
-                let diff = data.totalReiniciar - data.totalSalvar;
-                
-                // 🌟 LÓGICA SINGULAR/PLURAL
-                let nomSingular = currentConfig.equipo1.nombreSingular || "REGALO";
-                let nomPlural = currentConfig.equipo1.nombrePlural || "REGALOS";
-                let textoUnidad = (diff === 1) ? nomSingular : nomPlural;
-                
-                if (currentConfig.equipo1.imgUnidad) {
-                    let glow = currentConfig.equipo1.color || "#00ff66";
-                    line1.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; gap:10px;"><img src="${currentConfig.equipo1.imgUnidad}" style="height:90px; object-fit:contain; filter:drop-shadow(0 0 10px ${glow});"><span style="color:${currentConfig.battleStyle.colorL1};">x${diff} ${textoUnidad} PARA SALVARNOS</span></div>`;
-                } else {
-                    line1.innerText = `x${diff} ${textoUnidad} PARA SALVARNOS`;
-                    line1.style.color = currentConfig.battleStyle.colorL1; 
-                }
-                
-                line1.style.display = 'block';
-                line2.style.display = 'block';
-                timerEl.style.display = 'block';
-                
-                countdownDisplay.style.display = 'flex'; 
-                if (!countdownInterval) {
-                    timer = currentConfig.countdownSeconds || 30; 
-                    timerEl.innerText = timer;
-                    
-                    countdownInterval = setInterval(() => {
-                        timer--;
-                        playAlertSound(); 
-                        
-                        if (timer <= 0) { 
-                            timer = 0; 
-                            triggerGameOver(latestData.topReiniciar); 
-                        }
-                        if (!isGameOver) timerEl.innerText = timer;
-                    }, 1000);
-                }
-            } else if (data.totalSalvar > data.totalReiniciar) {
-                let diff2 = (data.totalSalvar - data.totalReiniciar) + 1;
-                
-                // 🌟 LÓGICA SINGULAR/PLURAL EQ2
-                let nomSingular2 = currentConfig.equipo2.nombreSingular || "REGALO";
-                let nomPlural2 = currentConfig.equipo2.nombrePlural || "REGALOS";
-                let textoUnidad2 = (diff2 === 1) ? nomSingular2 : nomPlural2;
+            countdownDisplay.style.display = 'flex';
+            line1.style.display = 'flex';
 
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-                
-                if (currentConfig.equipo2.imgUnidad) {
-                    let glow2 = currentConfig.equipo2.color || "#ff003c";
-                    line1.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; gap:10px;"><img src="${currentConfig.equipo2.imgUnidad}" style="height:90px; object-fit:contain; filter:drop-shadow(0 0 10px ${glow2});"><span style="color:${currentConfig.equipo2.color};">x${diff2} ${textoUnidad2} PARA REINICIAR</span></div>`;
+            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 (DONAS / REINICIAR) -> MUESTRA CAPIBARAS PARA SALVAR + CUENTA ATRÁS ABAJO
+            if (reiniciarPts > salvarPts) {
+                let diff = reiniciarPts - salvarPts;
+                let img1 = (currentConfig.equipo1.imgUnidad || "").trim();
+                let nom1 = (diff === 1) ? (currentConfig.equipo1.nombreSingular || "REGALO") : (currentConfig.equipo1.nombrePlural || "REGALOS");
+
+                line1.innerHTML = renderEquationHTML(diff, img1, nom1, "SALVAR");
+
+                if (currentConfig.enableCountdown) {
+                    // Si en el panel pones Tamaño Texto Línea 2 en 0, solo se verá el número corriendo abajo
+                    let showLine2 = (currentConfig.battleStyle?.sizeL2 === undefined || currentConfig.battleStyle.sizeL2 > 0);
+                    line2.style.display = showLine2 ? 'block' : 'none';
+                    timerEl.style.display = 'block';
+
+                    if (!countdownInterval) {
+                        timer = currentConfig.countdownSeconds || 30; 
+                        timerEl.innerText = timer;
+                        
+                        countdownInterval = setInterval(() => {
+                            timer--;
+                            playAlertSound(); 
+                            
+                            if (timer <= 0) { 
+                                timer = 0; 
+                                triggerGameOver(latestData.topReiniciar); 
+                            }
+                            if (!isGameOver) timerEl.innerText = timer;
+                        }, 1000);
+                    }
                 } else {
-                    line1.innerText = `x${diff2} ${textoUnidad2} PARA REINICIAR`;
-                    line1.style.color = currentConfig.equipo2.color || '#ff003c'; 
+                    line2.style.display = 'none';
+                    timerEl.style.display = 'none';
                 }
-                
-                line1.style.display = 'block';
+            } 
+            // 🟢 ESCENARIO 2: EMPATE (0-0) O VA GANANDO EL EQUIPO 1 (PROTECCIÓN) -> MUESTRA DONAS NECESARIAS PARA RESET
+            else {
+                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 line2.style.display = 'none'; 
                 timerEl.style.display = 'none';
-                
-                countdownDisplay.style.display = 'flex';
-            } else {
-                countdownDisplay.style.display = 'none';
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+
+                // Si están 0-0 (o iguales), diff2 es (0) + 1 = 1 Dona para Reset. Si tienes 1 de ventaja, (1) + 1 = 2 Donas para Reset.
+                let diff2 = (salvarPts - reiniciarPts) + 1;
+                let img2 = (currentConfig.equipo2.imgUnidad || "").trim();
+                let nom2 = (diff2 === 1) ? (currentConfig.equipo2.nombreSingular || "DONA") : (currentConfig.equipo2.nombrePlural || "DONAS");
+
+                line1.innerHTML = renderEquationHTML(diff2, img2, nom2, "RESET");
             }
         }
 
