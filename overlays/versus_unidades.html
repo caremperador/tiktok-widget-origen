@@ -9,7 +9,7 @@
         body {
             margin: 0; padding: 0; background-color: transparent; 
             color: white; overflow: hidden;
-            font-family: 'Luckiest Guy', 'Lilita One', cursive, sans-serif;
+            font-family: 'Luckiest Guy', cursive, sans-serif;
         }
         
         .widget-wrapper { width: 100vw; height: 100vh; position: relative; }
@@ -19,84 +19,88 @@
             -webkit-text-stroke-linejoin: round;
         }
 
-        /* Zona contenedora anclada en el centro, sin cambiar jamás de posición */
+        /* Contenedor general */
         .countdown-zone {
-            position: absolute;
-            top: 42%; left: 50%; transform: translate(-50%, -50%);
-            width: 100%; height: 80px;
-            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
         }
         
-        /* Línea 1: SIEMPRE FIJA en la misma coordenada exacta */
+        /* 📌 LÍNEA 1: POSICIÓN 100% FIJA E INMÓVIL (Nunca se mueve cuando aparece el contador abajo) */
         .countdown-line1 { 
             position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            top: 32%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
             font-weight: 900; letter-spacing: 2px; z-index: 2; 
             text-align: center; display: flex; align-items: center; justify-content: center;
             white-space: nowrap;
         }
 
-        /* Fila de la ecuación fija: sin animaciones que cambien tamaño ni posición */
         .equation-row {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 14px;
-            height: 90px;
+            gap: 16px;
+            height: 100px;
         }
 
         .eq-num {
-            color: #ffea00; /* Amarillo intenso */
+            color: #ffea00; /* Amarillo intenso igual a la foto */
             line-height: 1;
             display: inline-block;
             font-size: 1.05em;
         }
 
         .eq-gift-img {
-            height: 1.4em; 
+            height: 1.6em; 
             width: auto;
-            min-height: 55px;
+            min-height: 65px;
             max-height: 115px;
             object-fit: contain;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7));
-            /* Totalmente estática y fija como pediste */
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55));
         }
 
         .eq-label {
-            color: #ffffff; /* Blanco puro para = RESET / = SALVAR */
+            color: #ffffff; /* Blanco puro igual a "= SALVAR" / "= RESET" */
             line-height: 1;
             display: inline-block;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
-        /* Línea 2 + Segundos: Anclada más abajo de forma independiente para NUNCA empujar la Línea 1 */
-        .countdown-subzone {
+        /* 📌 BLOQUE DE CUENTA ATRÁS ABAJO: Igual a la foto (REINICIANDO EN arriba y 56 grande abajo) */
+        .countdown-bottom-block {
             position: absolute;
-            top: calc(50% + 95px); /* Mucho más abajo sin mover lo de arriba */
+            top: 47%; /* Fijo debajo de la línea del capibara sin empujarla jamás */
             left: 50%;
             transform: translateX(-50%);
             display: none;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
-            white-space: nowrap;
+            justify-content: flex-start;
             z-index: 2;
+            white-space: nowrap;
         }
 
         .countdown-line2 { 
-            font-weight: 900; letter-spacing: 2px;
-            text-align: center; line-height: 1;
+            font-weight: 900; 
+            letter-spacing: 2.5px;
+            text-align: center; 
+            line-height: 1.05;
+            margin-bottom: -4px;
+            text-transform: uppercase;
         }
         
-        /* Los segundos ahora tienen el mismo tamaño armónico y NO cambian de escala */
         .countdown-number { 
-            font-weight: 900; line-height: 1;
+            font-weight: 900; 
+            line-height: 0.95;
+            text-align: center;
         }
 
         #winner-zone {
             position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            top: 45%; left: 50%; transform: translate(-50%, -50%);
             display: none; flex-direction: column; align-items: center; justify-content: center;
             width: 100%; z-index: 5;
         }
@@ -122,13 +126,13 @@
     
     <div class="widget-wrapper">
         <div class="countdown-zone" id="countdown-display">
-            <!-- Línea 1: Posición 100% fija e inmóvil -->
+            <!-- Línea 1 Fija arriba: 1 [Capibara] = SALVAR o [Dona] = RESET -->
             <div class="countdown-line1" id="countdown-line1-text"></div>
             
-            <!-- Línea inferior independiente: Más abajo y del mismo tamaño sin saltar -->
-            <div class="countdown-subzone" id="countdown-subzone">
-                <span class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</span>
-                <span class="countdown-number" id="timer">30s</span>
+            <!-- Bloque inferior independiente: REINICIANDO EN arriba y el número grande abajo (como en tu foto) -->
+            <div class="countdown-bottom-block" id="countdown-bottom-block">
+                <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
+                <div class="countdown-number" id="timer">30</div>
             </div>
             
             <div id="winner-zone">
@@ -143,11 +147,41 @@
     <script>
         const socket = io();
         
-        // Imágenes por defecto (Capibara para Eq 1 Salvar, Dona para Eq 2 Reset)
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
 
-        let currentConfig = null;
+        // Configuración ya cargada por defecto para que funcione al instante sin tocar "Guardar Todo en Vivo"
+        let currentConfig = {
+            equipo1: {
+                nombre: "EQUIPO 1",
+                nombreSingular: "CAPIBARA",
+                nombrePlural: "CAPIBARAS",
+                color: "#00ff66",
+                imgUnidad: DEFAULT_CAPIBARA_IMG
+            },
+            equipo2: {
+                nombre: "EQUIPO 2",
+                nombreSingular: "DONA",
+                nombrePlural: "DONAS",
+                color: "#ff003c",
+                imgUnidad: DEFAULT_DONA_IMG
+            },
+            enableCountdown: true,
+            countdownSeconds: 30,
+            battleStyle: {
+                fontFamily: "'Luckiest Guy', cursive",
+                textStroke: 2.5,
+                shadowOpacity: 0.85,
+                shadowDistance: 4,
+                colorL1: "#ffea00",
+                sizeL1: 52,
+                colorL2: "#ff0055",
+                sizeL2: 44,
+                colorTimer: "#ffffff",
+                sizeTimer: 130
+            }
+        };
+
         let timer = 30;
         let countdownInterval = null;
         let audioCtx = null;
@@ -191,44 +225,58 @@
             if (!style) return;
             document.body.style.fontFamily = style.fontFamily || "'Luckiest Guy', cursive";
             
-            let baseStroke = parseFloat(style.textStroke) || 2.0;
-            let strokePx = Math.max(baseStroke * 3.5, 6); 
+            let baseStroke = parseFloat(style.textStroke) || 2.5;
+            let strokePx = Math.max(baseStroke * 3.5, 7); 
 
             const l1 = document.getElementById('countdown-line1-text');
-            let size1 = style.sizeL1 || 52;
-            l1.style.fontSize = size1 + "px";
+            l1.style.fontSize = (style.sizeL1 || 52) + "px";
             l1.style.webkitTextStroke = strokePx + "px #000000";
 
-            // La línea de abajo ("REINICIANDO EN 30s") usa un tamaño parejo y fijo
-            const subzone = document.getElementById('countdown-subzone');
             const l2 = document.getElementById('countdown-line2-text');
+            l2.style.color = style.colorL2 || "#ff0055"; 
+            l2.style.fontSize = (style.sizeL2 || 44) + "px";
+            l2.style.webkitTextStroke = (strokePx * 0.9) + "px #000000";
+
             const lt = document.getElementById('timer');
-            
-            let size2 = (style.sizeL2 && style.sizeL2 <= 70) ? style.sizeL2 : 42;
-            l2.style.color = style.colorL2 || "#ff003c"; 
-            l2.style.fontSize = size2 + "px";
-            l2.style.webkitTextStroke = (strokePx * 0.85) + "px #000000";
+            lt.style.color = style.colorTimer || "#ffffff"; 
+            lt.style.fontSize = (style.sizeTimer || 130) + "px";
+            lt.style.webkitTextStroke = (strokePx * 1.35) + "px #000000";
 
-            lt.style.color = style.colorTimer || "#ffea00"; 
-            lt.style.fontSize = size2 + "px"; /* Mismo tamaño que el texto de al lado */
-            lt.style.webkitTextStroke = (strokePx * 0.85) + "px #000000";
-
-            // Distancia hacia abajo configurable o 95px por defecto
-            let offsetDown = (style.sizeTimer && style.sizeTimer >= 60 && style.sizeTimer <= 250) ? style.sizeTimer : 95;
-            subzone.style.top = `calc(50% + ${offsetDown}px)`;
-
-            const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 0.9;
+            const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 0.85;
             const dist = style.shadowDistance !== undefined ? style.shadowDistance : 4;
-            const shadowColor = `rgba(0,0,0,${op})`;
-            
-            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
-            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist}px 6px${shadowColor}`;
-            lt.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist}px 6px${shadowColor}`;
+            const shadowColor = `rgba(0,0,0,${op})`;  l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
+            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px ${shadowColor}`; // Resplandor rojizo suave detrás del número blanco exactamente como en tu foto lt.style.textShadow = `0px ${dist + 1}px 0px #000000, 0 0 28px rgba(255, 0, 85, 0.85), 0 0 12px rgba(255, 0, 60, 0.65)`;
         }
 
+        // Inicializar diseño y vista de inmediato con los valores por defecto
+        applyDesign(currentConfig.battleStyle);
+        procesarActualizacionVisual(latestData);
+
         socket.on('config_actual', (config) => {
-            if(!config.unidades) return;
-            currentConfig = config.unidades;
+            if(config && config.unidades) {
+                currentConfig = {
+                    ...currentConfig,
+                    ...config.unidades,
+                    equipo1: {
+                        ...currentConfig.equipo1,
+                        ...(config.unidades.equipo1 || {}),
+                        imgUnidad: (config.unidades.equipo1?.imgUnidad && config.unidades.equipo1.imgUnidad.trim() !== "")
+                            ? config.unidades.equipo1.imgUnidad.trim()
+                            : DEFAULT_CAPIBARA_IMG
+                    },
+                    equipo2: {
+                        ...currentConfig.equipo2,
+                        ...(config.unidades.equipo2 || {}),
+                        imgUnidad: (config.unidades.equipo2?.imgUnidad && config.unidades.equipo2.imgUnidad.trim() !== "")
+                            ? config.unidades.equipo2.imgUnidad.trim()
+                            : DEFAULT_DONA_IMG
+                    },
+                    battleStyle: {
+                        ...currentConfig.battleStyle,
+                        ...(config.unidades.battleStyle || {})
+                    }
+                };
+            }
             applyDesign(currentConfig.battleStyle);
             procesarActualizacionVisual(latestData);
         });
@@ -250,7 +298,7 @@
             }
             
             document.getElementById('countdown-line1-text').style.display = 'none';
-            document.getElementById('countdown-subzone').style.display = 'none';
+            document.getElementById('countdown-bottom-block').style.display = 'none';
             
             let c2 = currentConfig.equipo2.color || "#ff003c";
             let cleanName = topReiniciar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
@@ -272,39 +320,7 @@
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
             
             winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c2}`;
-            winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`; 
-
-            document.getElementById('winner-zone').style.display = 'flex';
-
-            socket.emit('reset_unidades');
-
-            setTimeout(() => {
-                isGameOver = false;
-                document.getElementById('winner-zone').style.display = 'none';
-                if (latestData) {
-                    wasLosing = latestData.totalReiniciar > latestData.totalSalvar; 
-                    procesarActualizacionVisual(latestData);
-                }
-            }, 3000); 
-        }
-
-        function triggerSaved(topSalvar) {
-            isGameOver = true; 
-            if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-            
-            document.getElementById('countdown-line1-text').style.display = 'none';
-            document.getElementById('countdown-subzone').style.display = 'none';
-            
-            let c1 = currentConfig.equipo1.color || "#00ff66";
-            let cleanName = topSalvar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
-
-            let winnerImg = document.getElementById('winner-avatar');
-            let winnerTitle = document.getElementById('winner-title');
-            let winnerName = document.getElementById('winner-name');
-
-            winnerImg.src = topSalvar.avatar ? topSalvar.avatar : 'https://via.placeholder.com/150/222/fff?text=?';
-            winnerImg.style.borderColor = c1;
-            winnerImg.style.boxShadow = `0 0 20px ${c1}`;
+            winnerName.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op})`;  document.getElementById('winner-zone').style.display = 'flex';  socket.emit('reset_unidades');  setTimeout(() => { isGameOver = false; document.getElementById('winner-zone').style.display = 'none'; if (latestData) { wasLosing = latestData.totalReiniciar > latestData.totalSalvar; procesarActualizacionVisual(latestData); } }, 3000); }  function triggerSaved(topSalvar) { isGameOver = true; if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }  document.getElementById('countdown-line1-text').style.display = 'none'; document.getElementById('countdown-bottom-block').style.display = 'none';  let c1 = currentConfig.equipo1.color \vert{}\vert{} "#00ff66"; let cleanName = topSalvar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();  let winnerImg = document.getElementById('winner-avatar'); let winnerTitle = document.getElementById('winner-title'); let winnerName = document.getElementById('winner-name');  winnerImg.src = topSalvar.avatar ? topSalvar.avatar : 'https://via.placeholder.com/150/222/fff?text=?'; winnerImg.style.borderColor = c1; winnerImg.style.boxShadow = `0 0 20px ${c1}`;
             
             winnerTitle.innerText = `¡TE SALVÓ!`;
             winnerTitle.style.color = c1;
@@ -313,8 +329,7 @@
             
             const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
-            winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c1}`;
-            winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
+            winnerTitle.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c1}`; winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
 
             document.getElementById('winner-zone').style.display = 'flex';
 
@@ -333,7 +348,6 @@
             procesarActualizacionVisual(data);
         });
 
-        // Función que arma la fila: Si hideNumberWhenOne es true y amount es 1, NO muestra el número "1"
         function renderEquationHTML(amount, imgUrl, fallbackName, actionWord, hideNumberWhenOne = false) {
             let numColor = currentConfig?.battleStyle?.colorL1 || "#ffea00";
             let showNumber = !(hideNumberWhenOne && amount === 1);
@@ -374,36 +388,33 @@
             }
             wasLosing = isLosing; 
 
-            let countdownDisplay = document.getElementById('countdown-display');
             let line1 = document.getElementById('countdown-line1-text');
-            let subzone = document.getElementById('countdown-subzone');
+            let bottomBlock = document.getElementById('countdown-bottom-block');
             let timerEl = document.getElementById('timer');
             
-            countdownDisplay.style.display = 'flex';
             line1.style.display = 'flex';
 
-            // Imágenes con fallback automático a las URLs de Capibara y Dona que pasaste
-            let imgCapibara = (currentConfig.equipo1.imgUnidad && currentConfig.equipo1.imgUnidad.trim() !== "") 
+            let imgCapibara = (currentConfig.equipo1?.imgUnidad && currentConfig.equipo1.imgUnidad.trim() !== "") 
                 ? currentConfig.equipo1.imgUnidad.trim() 
                 : DEFAULT_CAPIBARA_IMG;
 
-            let imgDona = (currentConfig.equipo2.imgUnidad && currentConfig.equipo2.imgUnidad.trim() !== "") 
+            let imgDona = (currentConfig.equipo2?.imgUnidad && currentConfig.equipo2.imgUnidad.trim() !== "") 
                 ? currentConfig.equipo2.imgUnidad.trim() 
                 : DEFAULT_DONA_IMG;
 
-            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 (DONAS) -> MUESTRA CAPIBARAS PARA SALVAR + CUENTA ATRÁS ABAJO
+            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 -> "1 [Capibara] = SALVAR" arriba fijo + "REINICIANDO EN / 56" abajo
             if (reiniciarPts > salvarPts) {
                 let diff = reiniciarPts - salvarPts;
                 let nom1 = (diff === 1) ? (currentConfig.equipo1.nombreSingular || "CAPIBARA") : (currentConfig.equipo1.nombrePlural || "CAPIBARAS");
 
                 line1.innerHTML = renderEquationHTML(diff, imgCapibara, nom1, "SALVAR", false);
 
-                if (currentConfig.enableCountdown) {
-                    subzone.style.display = 'inline-flex';
+                if (currentConfig.enableCountdown !== false) {
+                    bottomBlock.style.display = 'flex';
 
                     if (!countdownInterval) {
                         timer = currentConfig.countdownSeconds || 30; 
-                        timerEl.innerText = timer + "s";
+                        timerEl.innerText = timer;
                         
                         countdownInterval = setInterval(() => {
                             timer--;
@@ -413,22 +424,21 @@
                                 timer = 0; 
                                 triggerGameOver(latestData.topReiniciar); 
                             }
-                            if (!isGameOver) timerEl.innerText = timer + "s";
+                            if (!isGameOver) timerEl.innerText = timer;
                         }, 1000);
                     }
                 } else {
-                    subzone.style.display = 'none';
+                    bottomBlock.style.display = 'none';
                 }
             } 
-            // 🟢 ESCENARIO 2: EMPATE (0-0) O VENTAJA EQUIPO 1 -> Si es empate muestra "[Dona] = RESET", si hay ventaja muestra "2 [Dona] = RESET"
+            // 🟢 ESCENARIO 2: EMPATE (0-0) O VENTAJA EQUIPO 1 -> En empate muestra "[Dona] = RESET", con ventaja muestra "2 [Dona] = RESET"
             else {
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-                subzone.style.display = 'none'; 
+                bottomBlock.style.display = 'none'; 
 
                 let diff2 = (salvarPts - reiniciarPts) + 1;
                 let nom2 = (diff2 === 1) ? (currentConfig.equipo2.nombreSingular || "DONA") : (currentConfig.equipo2.nombrePlural || "DONAS");
 
-                // El último parámetro "true" hace que cuando diff2 sea 1 (empate o 0-0), NO ponga el "1", solo "[Imagen Dona] = RESET"
                 line1.innerHTML = renderEquationHTML(diff2, imgDona, nom2, "RESET", true);
             }
         }

@@ -48,6 +48,14 @@
         .mp-controls { display: flex; gap: 8px; }
         .mp-input { padding:10px !important; flex:1; background: #000 !important; }
         .btn-mp { border:none; border-radius:6px; font-weight:bold; cursor:pointer; padding: 0 15px; font-size: 16px;}
+
+        /* Botones rápidos +1, +5, +10 */
+        .quick-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-quick { flex: 1; padding: 9px 0; border: none; border-radius: 6px; font-weight: 900; font-size: 14px; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
+        .btn-quick:hover { filter: brightness(1.15); }
+        .btn-quick:active { transform: scale(0.95); }
+        .btn-quick-eq1 { background: rgba(0, 255, 102, 0.18); color: #00ff66; border: 1px solid #00ff66; }
+        .btn-quick-eq2 { background: rgba(255, 0, 60, 0.18); color: #ff003c; border: 1px solid #ff003c; }
     </style>
 </head>
 <body>
@@ -56,13 +64,13 @@
         <div class="top-row">
             <div style="flex: 0.4;">
                 <label style="color: #cc00ff;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás</label>
-                <input type="number" id="input-countdown-sec" style="margin-bottom: 15px;">
+                <input type="number" id="input-countdown-sec" value="30" style="margin-bottom: 15px;">
                 
                 <button class="btn-clear" onclick="resetearValores()" style="width: 100%; background: #ff003c; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,0,60,0.4);"><i class="fa-solid fa-skull"></i> Resetear a 0 (Unidades)</button>
             </div>
             <div style="flex: 1; display: flex; flex-direction: column;">
-                <label class="checkbox-group"><input type="checkbox" id="check-countdown"> Activar Cuenta Regresiva</label>
-                <p style="font-size: 13px; color: #ccc;">Este modo muestra el formato fijo con icono (Ej: "[Dona] = RESET" o "3 [Capibara] = SALVAR") y la cuenta regresiva debajo sin mover la posición.</p>
+                <label class="checkbox-group"><input type="checkbox" id="check-countdown" checked> Activar Cuenta Regresiva</label>
+                <p style="font-size: 13px; color: #ccc;">Las imágenes de Capibara y Dona ya vienen guardadas y activas por defecto. Puedes sumar unidades con un clic usando los botones rápidos (+1, +5, +10).</p>
             </div>
         </div>
 
@@ -77,12 +85,12 @@
                     </div>
                 </div>
                 
-                <div><label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen de la Unidad (Por defecto: Capibara)</label>
-                <input type="text" id="eq1-img" value="https://i.imgur.com/OdX4lkD.png" placeholder="https://i.imgur.com/OdX4lkD.png"></div>
+                <div><label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen de la Unidad (Capibara)</label>
+                <input type="text" id="eq1-img" value="https://i.imgur.com/OdX4lkD.png"></div>
                 
                 <div style="display:flex; gap:10px;">
-                    <div style="flex:1;"><label style="color:#00ff66;">Unidad Singular</label><input type="text" id="eq1-sing" value="CAPIBARA" placeholder="Ej: CAPIBARA"></div>
-                    <div style="flex:1;"><label style="color:#00ff66;">Unidad Plural</label><input type="text" id="eq1-plur" value="CAPIBARAS" placeholder="Ej: CAPIBARAS"></div>
+                    <div style="flex:1;"><label style="color:#00ff66;">Unidad Singular</label><input type="text" id="eq1-sing" value="CAPIBARA"></div>
+                    <div style="flex:1;"><label style="color:#00ff66;">Unidad Plural</label><input type="text" id="eq1-plur" value="CAPIBARAS"></div>
                 </div>
                 
                 <div class="manual-points-box">
@@ -91,8 +99,14 @@
                         <span class="mp-score" id="lbl-pts-eq1-uni" style="color:#00ff66;">0</span>
                     </div>
                     <div class="mp-controls">
-                        <input type="number" id="manual-pts-eq1-uni" class="mp-input" placeholder="Añadir unidad (Ej: 1)">
+                        <input type="number" id="manual-pts-eq1-uni" class="mp-input" placeholder="Cantidad manual...">
                         <button class="btn-mp" style="background:#00ff66; color:black;" onclick="modificarPuntosUnidades(1, 'sumar')"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <!-- Botones Rápidos Eq 1 -->
+                    <div class="quick-btns">
+                        <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 1)">+1</button>
+                        <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 5)">+5</button>
+                        <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 10)">+10</button>
                     </div>
                 </div>
 
@@ -111,12 +125,12 @@
                     </div>
                 </div>
 
-                <div><label style="color:#ff003c;"><i class="fa-solid fa-image"></i> URL Imagen de la Unidad (Por defecto: Dona)</label>
-                <input type="text" id="eq2-img" value="https://i.imgur.com/Wwy2Kzf.png" placeholder="https://i.imgur.com/Wwy2Kzf.png"></div>
+                <div><label style="color:#ff003c;"><i class="fa-solid fa-image"></i> URL Imagen de la Unidad (Dona)</label>
+                <input type="text" id="eq2-img" value="https://i.imgur.com/Wwy2Kzf.png"></div>
                 
                 <div style="display:flex; gap:10px;">
-                    <div style="flex:1;"><label style="color:#ff003c;">Unidad Singular</label><input type="text" id="eq2-sing" value="DONA" placeholder="Ej: DONA"></div>
-                    <div style="flex:1;"><label style="color:#ff003c;">Unidad Plural</label><input type="text" id="eq2-plur" value="DONAS" placeholder="Ej: DONAS"></div>
+                    <div style="flex:1;"><label style="color:#ff003c;">Unidad Singular</label><input type="text" id="eq2-sing" value="DONA"></div>
+                    <div style="flex:1;"><label style="color:#ff003c;">Unidad Plural</label><input type="text" id="eq2-plur" value="DONAS"></div>
                 </div>
                 
                 <div class="manual-points-box">
@@ -125,8 +139,14 @@
                         <span class="mp-score" id="lbl-pts-eq2-uni" style="color:#ff003c;">0</span>
                     </div>
                     <div class="mp-controls">
-                        <input type="number" id="manual-pts-eq2-uni" class="mp-input" placeholder="Añadir unidad (Ej: 1)">
+                        <input type="number" id="manual-pts-eq2-uni" class="mp-input" placeholder="Cantidad manual...">
                         <button class="btn-mp" style="background:#ff003c; color:white;" onclick="modificarPuntosUnidades(2, 'sumar')"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <!-- Botones Rápidos Eq 2 -->
+                    <div class="quick-btns">
+                        <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 1)">+1</button>
+                        <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 5)">+5</button>
+                        <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 10)">+10</button>
                     </div>
                 </div>
 
@@ -154,19 +174,19 @@
                     <option value="'Montserrat', sans-serif">Montserrat (Moderna)</option>
                 </select>
                 <label style="color:#aaa; font-size:10px;">Grosor Borde Negro</label>
-                <input type="number" id="ds-stroke" step="0.5" placeholder="Ej. 2">
+                <input type="number" id="ds-stroke" step="0.5" value="2.5">
             </div>
 
             <div class="design-item">
                 <label style="color:#ccc;">Sombras (Text Shadow)</label>
                 <label style="color:#aaa; font-size:10px;">Opacidad (0.0 a 1.0)</label>
-                <input type="number" id="ds-shadow-op" step="0.1" min="0" max="1" placeholder="Ej. 0.8">
+                <input type="number" id="ds-shadow-op" step="0.1" min="0" max="1" value="0.85">
                 <label style="color:#aaa; font-size:10px; margin-top:5px;">Distancia de Sombra (px)</label>
-                <input type="number" id="ds-shadow-dist" step="1" placeholder="Ej. 4">
+                <input type="number" id="ds-shadow-dist" step="1" value="4">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ffd700;">
-                <label style="color:#ffd700;">Línea 1 (Ecuación Fija)</label>
+                <label style="color:#ffd700;">Línea 1 (1 [Foto] = SALVAR)</label>
                 <label style="color:#aaa; font-size:10px;">Color Número</label>
                 <input type="color" id="ds-c1" value="#ffea00">
                 <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
@@ -174,19 +194,19 @@
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ff003c;">
-                <label style="color:#ff003c;">Línea 2 (Reiniciando en...)</label>
-                <label style="color:#aaa; font-size:10px;">Color Texto</label>
-                <input type="color" id="ds-c2" value="#ff003c">
+                <label style="color:#ff003c;">Línea 2 (REINICIANDO EN)</label>
+                <label style="color:#aaa; font-size:10px;">Color</label>
+                <input type="color" id="ds-c2" value="#ff0055">
                 <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
-                <input type="number" id="ds-s2" value="42">
+                <input type="number" id="ds-s2" value="44">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ffffff;">
-                <label style="color:#ffffff;">Segundos Cuenta Atrás</label>
-                <label style="color:#aaa; font-size:10px;">Color Segundos</label>
-                <input type="color" id="ds-ct" value="#ffea00">
-                <label style="color:#aaa; font-size:10px; margin-top:5px;">Separación hacia abajo (px)</label>
-                <input type="number" id="ds-st" value="95">
+                <label style="color:#ffffff;">Números (Segundos)</label>
+                <label style="color:#aaa; font-size:10px;">Color</label>
+                <input type="color" id="ds-ct" value="#ffffff">
+                <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
+                <input type="number" id="ds-st" value="130">
             </div>
         </div>
 
@@ -243,50 +263,70 @@
 
         socket.on('config_actual', (config) => {
             let uConf = config.unidades;
-            if(!uConf) return;
+            let needsAutoSave = false;
+
+            if(!uConf) {
+                needsAutoSave = true;
+                uConf = { equipo1: {}, equipo2: {}, enableCountdown: true, countdownSeconds: 30 };
+            }
+
+            // Si en el servidor estaban vacías las imágenes, marcamos para auto-guardar por defecto sin pedir clic
+            if (!uConf.equipo1?.imgUnidad || uConf.equipo1.imgUnidad.trim() === "" || !uConf.equipo2?.imgUnidad || uConf.equipo2.imgUnidad.trim() === "") {
+                needsAutoSave = true;
+            }
 
             document.getElementById('input-countdown-sec').value = uConf.countdownSeconds || 30;
-            document.getElementById('check-countdown').checked = uConf.enableCountdown;
+            document.getElementById('check-countdown').checked = uConf.enableCountdown !== undefined ? uConf.enableCountdown : true;
             
-            document.getElementById('eq1-nombre').value = uConf.equipo1.nombre || "EQUIPO 1"; 
-            document.getElementById('eq1-sing').value = uConf.equipo1.nombreSingular || "CAPIBARA"; 
-            document.getElementById('eq1-plur').value = uConf.equipo1.nombrePlural || "CAPIBARAS"; 
-            document.getElementById('eq1-img').value = (uConf.equipo1.imgUnidad && uConf.equipo1.imgUnidad.trim() !== "") ? uConf.equipo1.imgUnidad : DEFAULT_CAPIBARA_IMG; 
+            document.getElementById('eq1-nombre').value = uConf.equipo1?.nombre || "EQUIPO 1"; 
+            document.getElementById('eq1-sing').value = uConf.equipo1?.nombreSingular || "CAPIBARA"; 
+            document.getElementById('eq1-plur').value = uConf.equipo1?.nombrePlural || "CAPIBARAS"; 
+            document.getElementById('eq1-img').value = (uConf.equipo1?.imgUnidad && uConf.equipo1.imgUnidad.trim() !== "") ? uConf.equipo1.imgUnidad : DEFAULT_CAPIBARA_IMG; 
 
-            document.getElementById('eq2-nombre').value = uConf.equipo2.nombre || "EQUIPO 2"; 
-            document.getElementById('eq2-sing').value = uConf.equipo2.nombreSingular || "DONA"; 
-            document.getElementById('eq2-plur').value = uConf.equipo2.nombrePlural || "DONAS"; 
-            document.getElementById('eq2-img').value = (uConf.equipo2.imgUnidad && uConf.equipo2.imgUnidad.trim() !== "") ? uConf.equipo2.imgUnidad : DEFAULT_DONA_IMG; 
+            document.getElementById('eq2-nombre').value = uConf.equipo2?.nombre || "EQUIPO 2"; 
+            document.getElementById('eq2-sing').value = uConf.equipo2?.nombreSingular || "DONA"; 
+            document.getElementById('eq2-plur').value = uConf.equipo2?.nombrePlural || "DONAS"; 
+            document.getElementById('eq2-img').value = (uConf.equipo2?.imgUnidad && uConf.equipo2.imgUnidad.trim() !== "") ? uConf.equipo2.imgUnidad : DEFAULT_DONA_IMG; 
             
-            let c1 = uConf.equipo1.color || "#00ff66";
-            let c2 = uConf.equipo2.color || "#ff003c";
+            let c1 = uConf.equipo1?.color || "#00ff66";
+            let c2 = uConf.equipo2?.color || "#ff003c";
             document.getElementById('eq1-color').value = c1; document.getElementById('eq1-hex').value = c1.toUpperCase(); document.getElementById('lbl-eq1').style.color = c1;
             document.getElementById('eq2-color').value = c2; document.getElementById('eq2-hex').value = c2.toUpperCase(); document.getElementById('lbl-eq2').style.color = c2;
 
             if(uConf.battleStyle) {
                 document.getElementById('ds-font').value = uConf.battleStyle.fontFamily || "'Luckiest Guy', cursive";
-                document.getElementById('ds-stroke').value = uConf.battleStyle.textStroke || 2;
-                document.getElementById('ds-shadow-op').value = uConf.battleStyle.shadowOpacity !== undefined ? uConf.battleStyle.shadowOpacity : 0.9;
+                document.getElementById('ds-stroke').value = uConf.battleStyle.textStroke || 2.5;
+                document.getElementById('ds-shadow-op').value = uConf.battleStyle.shadowOpacity !== undefined ? uConf.battleStyle.shadowOpacity : 0.85;
                 document.getElementById('ds-shadow-dist').value = uConf.battleStyle.shadowDistance !== undefined ? uConf.battleStyle.shadowDistance : 4;
                 document.getElementById('ds-c1').value = uConf.battleStyle.colorL1 || "#ffea00";
                 document.getElementById('ds-s1').value = uConf.battleStyle.sizeL1 || 52;
-                document.getElementById('ds-c2').value = uConf.battleStyle.colorL2 || "#ff003c";
-                document.getElementById('ds-s2').value = uConf.battleStyle.sizeL2 || 42;
-                document.getElementById('ds-ct').value = uConf.battleStyle.colorTimer || "#ffea00";
-                document.getElementById('ds-st').value = uConf.battleStyle.sizeTimer || 95;
+                document.getElementById('ds-c2').value = uConf.battleStyle.colorL2 || "#ff0055";
+                document.getElementById('ds-s2').value = uConf.battleStyle.sizeL2 || 44;
+                document.getElementById('ds-ct').value = uConf.battleStyle.colorTimer || "#ffffff";
+                document.getElementById('ds-st').value = uConf.battleStyle.sizeTimer || 130;
             }
 
             globalGifts = config.regalosDisponibles || []; 
-            eq1GiftsUni = uConf.equipo1.regalos || []; eq2GiftsUni = uConf.equipo2.regalos || [];
+            eq1GiftsUni = uConf.equipo1?.regalos || []; eq2GiftsUni = uConf.equipo2?.regalos || [];
             
             renderDropdowns();
             renderListUni(1); renderListUni(2);
+
+            // Auto-guarda silenciosamente en el servidor si faltaban los valores por defecto
+            if (needsAutoSave) {
+                guardarConfig(true);
+            }
         });
 
         socket.on('actualizacion_unidades', (data) => {
             document.getElementById('lbl-pts-eq1-uni').innerText = data.totalSalvar;
             document.getElementById('lbl-pts-eq2-uni').innerText = data.totalReiniciar;
         });
+
+        // Función para los botones rápidos +1, +5, +10
+        function sumarRapido(equipo, cantidad) {
+            socket.emit('modificar_puntos_unidades', { equipo: equipo, cantidad: cantidad });
+        }
 
         function modificarPuntosUnidades(equipo, accion) {
             let inputId = equipo === 1 ? 'manual-pts-eq1-uni' : 'manual-pts-eq2-uni';
@@ -324,15 +364,15 @@
         function guardarConfig(isSilent = false) {
             let configStyle = {
                 fontFamily: document.getElementById('ds-font').value,
-                textStroke: parseFloat(document.getElementById('ds-stroke').value) || 2,
+                textStroke: parseFloat(document.getElementById('ds-stroke').value) || 2.5,
                 shadowOpacity: parseFloat(document.getElementById('ds-shadow-op').value),
                 shadowDistance: parseInt(document.getElementById('ds-shadow-dist').value) || 4,
                 colorL1: document.getElementById('ds-c1').value,
                 sizeL1: parseInt(document.getElementById('ds-s1').value) || 52,
                 colorL2: document.getElementById('ds-c2').value,
-                sizeL2: parseInt(document.getElementById('ds-s2').value) || 42,
+                sizeL2: parseInt(document.getElementById('ds-s2').value) || 44,
                 colorTimer: document.getElementById('ds-ct').value,
-                sizeTimer: parseInt(document.getElementById('ds-st').value) || 95
+                sizeTimer: parseInt(document.getElementById('ds-st').value) || 130
             };
 
             let c1 = document.getElementById('eq1-hex').value;
