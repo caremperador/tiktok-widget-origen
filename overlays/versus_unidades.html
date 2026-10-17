@@ -19,63 +19,86 @@
             -webkit-text-stroke-linejoin: round;
         }
 
+        /* Zona contenedora anclada en el centro, sin cambiar jamás de posición */
         .countdown-zone {
             position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100%; display: flex; 
-            flex-direction: column; align-items: center; justify-content: center; 
-            animation: emerge 0.4s ease-out;
+            top: 42%; left: 50%; transform: translate(-50%, -50%);
+            width: 100%; height: 80px;
+            display: flex; align-items: center; justify-content: center;
         }
         
+        /* Línea 1: SIEMPRE FIJA en la misma coordenada exacta */
         .countdown-line1 { 
-            font-weight: 900; letter-spacing: 2px; margin-bottom: 5px; z-index: 2; 
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-weight: 900; letter-spacing: 2px; z-index: 2; 
             text-align: center; display: flex; align-items: center; justify-content: center;
+            white-space: nowrap;
         }
 
-        /* Diseño exacto a la imagen: [NÚMERO AMARILLO] [IMAGEN] [= TEXTO BLANCO] */
+        /* Fila de la ecuación fija: sin animaciones que cambien tamaño ni posición */
         .equation-row {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 14px;
+            height: 90px;
         }
 
         .eq-num {
-            color: #ffea00; /* Amarillo intenso igual a la referencia */
+            color: #ffea00; /* Amarillo intenso */
             line-height: 1;
             display: inline-block;
-            font-size: 1.08em;
+            font-size: 1.05em;
         }
 
         .eq-gift-img {
-            height: 1.45em; /* Se ajusta automáticamente al tamaño del texto */
+            height: 1.4em; 
             width: auto;
             min-height: 55px;
-            max-height: 130px;
+            max-height: 115px;
             object-fit: contain;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.65));
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7));
+            /* Totalmente estática y fija como pediste */
         }
 
         .eq-label {
-            color: #ffffff; /* Blanco puro igual a "= RESET" */
+            color: #ffffff; /* Blanco puro para = RESET / = SALVAR */
             line-height: 1;
             display: inline-block;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
+        /* Línea 2 + Segundos: Anclada más abajo de forma independiente para NUNCA empujar la Línea 1 */
+        .countdown-subzone {
+            position: absolute;
+            top: calc(50% + 95px); /* Mucho más abajo sin mover lo de arriba */
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            white-space: nowrap;
+            z-index: 2;
+        }
+
         .countdown-line2 { 
-            font-weight: 900; letter-spacing: 3px; margin-top: 2px; margin-bottom: -15px; 
-            z-index: 2; animation: flashRed 1s infinite; text-align: center; display: none;
+            font-weight: 900; letter-spacing: 2px;
+            text-align: center; line-height: 1;
         }
         
+        /* Los segundos ahora tienen el mismo tamaño armónico y NO cambian de escala */
         .countdown-number { 
-            font-weight: 900; animation: heartbeat 1s infinite; line-height: 1; margin-top: 8px; display: none;
+            font-weight: 900; line-height: 1;
         }
 
         #winner-zone {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
             display: none; flex-direction: column; align-items: center; justify-content: center;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); width: 100%; 
+            width: 100%; z-index: 5;
         }
         #winner-avatar {
             width: 110px; height: 110px;
@@ -91,11 +114,6 @@
             max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
         }
 
-        @keyframes flashRed { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5); } }
-        @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes emerge { 0% { opacity: 0; transform: translate(-50%, -40%); } 100% { opacity: 1; transform: translate(-50%, -50%); } }
-        @keyframes heartbeat { 0%, 30%, 100% { transform: scale(1); } 15% { transform: scale(1.15); } }
-
         #canvas-effects { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
     </style>
 </head>
@@ -104,12 +122,14 @@
     
     <div class="widget-wrapper">
         <div class="countdown-zone" id="countdown-display">
-            <!-- Línea 1: 2 [Imagen] = RESET / SALVAR -->
+            <!-- Línea 1: Posición 100% fija e inmóvil -->
             <div class="countdown-line1" id="countdown-line1-text"></div>
-            <!-- Línea 2: REINICIANDO EN (Opcional según tu tamaño) -->
-            <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
-            <!-- Línea 3: Cuenta atrás abajo -->
-            <div class="countdown-number" id="timer">30</div>
+            
+            <!-- Línea inferior independiente: Más abajo y del mismo tamaño sin saltar -->
+            <div class="countdown-subzone" id="countdown-subzone">
+                <span class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</span>
+                <span class="countdown-number" id="timer">30s</span>
+            </div>
             
             <div id="winner-zone">
                 <img id="winner-avatar" src="https://via.placeholder.com/150/222/fff?text=?">
@@ -122,6 +142,11 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        
+        // Imágenes por defecto (Capibara para Eq 1 Salvar, Dona para Eq 2 Reset)
+        const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
+        const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
+
         let currentConfig = null;
         let timer = 30;
         let countdownInterval = null;
@@ -164,34 +189,41 @@
 
         function applyDesign(style) {
             if (!style) return;
-            // Usa la fuente de tu panel o Luckiest Guy por defecto (igual a la foto)
             document.body.style.fontFamily = style.fontFamily || "'Luckiest Guy', cursive";
             
-            // Borde negro grueso y nítido como en la imagen
-            let baseStroke = parseFloat(style.textStroke) || 2.5;
+            let baseStroke = parseFloat(style.textStroke) || 2.0;
             let strokePx = Math.max(baseStroke * 3.5, 6); 
 
             const l1 = document.getElementById('countdown-line1-text');
-            l1.style.fontSize = (style.sizeL1 || 52) + "px";
+            let size1 = style.sizeL1 || 52;
+            l1.style.fontSize = size1 + "px";
             l1.style.webkitTextStroke = strokePx + "px #000000";
 
+            // La línea de abajo ("REINICIANDO EN 30s") usa un tamaño parejo y fijo
+            const subzone = document.getElementById('countdown-subzone');
             const l2 = document.getElementById('countdown-line2-text');
-            l2.style.color = style.colorL2 || "#ff003c"; 
-            l2.style.fontSize = (style.sizeL2 || 38) + "px";
-            l2.style.webkitTextStroke = (strokePx * 0.8) + "px #000000";
-
             const lt = document.getElementById('timer');
-            lt.style.color = style.colorTimer || "#ffffff"; 
-            lt.style.fontSize = (style.sizeTimer || 120) + "px";
-            lt.style.webkitTextStroke = (strokePx * 1.4) + "px #000000";
+            
+            let size2 = (style.sizeL2 && style.sizeL2 <= 70) ? style.sizeL2 : 42;
+            l2.style.color = style.colorL2 || "#ff003c"; 
+            l2.style.fontSize = size2 + "px";
+            l2.style.webkitTextStroke = (strokePx * 0.85) + "px #000000";
+
+            lt.style.color = style.colorTimer || "#ffea00"; 
+            lt.style.fontSize = size2 + "px"; /* Mismo tamaño que el texto de al lado */
+            lt.style.webkitTextStroke = (strokePx * 0.85) + "px #000000";
+
+            // Distancia hacia abajo configurable o 95px por defecto
+            let offsetDown = (style.sizeTimer && style.sizeTimer >= 60 && style.sizeTimer <= 250) ? style.sizeTimer : 95;
+            subzone.style.top = `calc(50% + ${offsetDown}px)`;
 
             const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 0.9;
             const dist = style.shadowDistance !== undefined ? style.shadowDistance : 4;
             const shadowColor = `rgba(0,0,0,${op})`;
             
-            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px ${shadowColor}`;
-            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist}px 6px ${shadowColor}`;
-            lt.style.textShadow = `0px ${dist + 2}px 0px #000000, 0 0 30px #ff003c`;
+            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
+            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist}px 6px${shadowColor}`;
+            lt.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist}px 6px${shadowColor}`;
         }
 
         socket.on('config_actual', (config) => {
@@ -218,8 +250,7 @@
             }
             
             document.getElementById('countdown-line1-text').style.display = 'none';
-            document.getElementById('countdown-line2-text').style.display = 'none';
-            document.getElementById('timer').style.display = 'none';
+            document.getElementById('countdown-subzone').style.display = 'none';
             
             let c2 = currentConfig.equipo2.color || "#ff003c";
             let cleanName = topReiniciar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
@@ -240,7 +271,7 @@
             const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
             
-            winnerTitle.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c2}`;
+            winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c2}`;
             winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`; 
 
             document.getElementById('winner-zone').style.display = 'flex';
@@ -262,8 +293,7 @@
             if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
             
             document.getElementById('countdown-line1-text').style.display = 'none';
-            document.getElementById('countdown-line2-text').style.display = 'none';
-            document.getElementById('timer').style.display = 'none';
+            document.getElementById('countdown-subzone').style.display = 'none';
             
             let c1 = currentConfig.equipo1.color || "#00ff66";
             let cleanName = topSalvar.name.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim();
@@ -283,7 +313,7 @@
             
             const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
             const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
-            winnerTitle.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op}), 0 0 20px ${c1}`;
+            winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c1}`;
             winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
 
             document.getElementById('winner-zone').style.display = 'flex';
@@ -303,11 +333,16 @@
             procesarActualizacionVisual(data);
         });
 
-        function renderEquationHTML(amount, imgUrl, fallbackName, actionWord) {
+        // Función que arma la fila: Si hideNumberWhenOne es true y amount es 1, NO muestra el número "1"
+        function renderEquationHTML(amount, imgUrl, fallbackName, actionWord, hideNumberWhenOne = false) {
+            let numColor = currentConfig?.battleStyle?.colorL1 || "#ffea00";
+            let showNumber = !(hideNumberWhenOne && amount === 1);
+            let numberSpan = showNumber ? `<span class="eq-num" style="color:${numColor};">${amount}</span>` : ``;
+
             if (imgUrl && imgUrl !== "") {
                 return `
                     <div class="equation-row">
-                        <span class="eq-num">${amount}</span>
+                        ${numberSpan}
                         <img src="${imgUrl}" class="eq-gift-img">
                         <span class="eq-label">= ${actionWord}</span>
                     </div>
@@ -315,7 +350,7 @@
             } else {
                 return `
                     <div class="equation-row">
-                        <span class="eq-num">${amount}</span>
+                        ${numberSpan}
                         <span class="eq-label">${fallbackName} = ${actionWord}</span>
                     </div>
                 `;
@@ -330,7 +365,6 @@
 
             let isLosing = reiniciarPts > salvarPts;
             
-            // Si estábamos perdiendo y nos acaban de empatar/superar con regalo en vivo
             if (wasLosing && !isLosing && salvarPts > 0) {
                 wasLosing = false; 
                 if (data.topSalvar && data.topSalvar.name !== 'ESPERANDO' && data.topSalvar.name !== 'MANUAL') {
@@ -342,29 +376,34 @@
 
             let countdownDisplay = document.getElementById('countdown-display');
             let line1 = document.getElementById('countdown-line1-text');
-            let line2 = document.getElementById('countdown-line2-text');
+            let subzone = document.getElementById('countdown-subzone');
             let timerEl = document.getElementById('timer');
             
             countdownDisplay.style.display = 'flex';
             line1.style.display = 'flex';
 
-            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 (DONAS / REINICIAR) -> MUESTRA CAPIBARAS PARA SALVAR + CUENTA ATRÁS ABAJO
+            // Imágenes con fallback automático a las URLs de Capibara y Dona que pasaste
+            let imgCapibara = (currentConfig.equipo1.imgUnidad && currentConfig.equipo1.imgUnidad.trim() !== "") 
+                ? currentConfig.equipo1.imgUnidad.trim() 
+                : DEFAULT_CAPIBARA_IMG;
+
+            let imgDona = (currentConfig.equipo2.imgUnidad && currentConfig.equipo2.imgUnidad.trim() !== "") 
+                ? currentConfig.equipo2.imgUnidad.trim() 
+                : DEFAULT_DONA_IMG;
+
+            // 🔴 ESCENARIO 1: VA GANANDO EL EQUIPO 2 (DONAS) -> MUESTRA CAPIBARAS PARA SALVAR + CUENTA ATRÁS ABAJO
             if (reiniciarPts > salvarPts) {
                 let diff = reiniciarPts - salvarPts;
-                let img1 = (currentConfig.equipo1.imgUnidad || "").trim();
-                let nom1 = (diff === 1) ? (currentConfig.equipo1.nombreSingular || "REGALO") : (currentConfig.equipo1.nombrePlural || "REGALOS");
+                let nom1 = (diff === 1) ? (currentConfig.equipo1.nombreSingular || "CAPIBARA") : (currentConfig.equipo1.nombrePlural || "CAPIBARAS");
 
-                line1.innerHTML = renderEquationHTML(diff, img1, nom1, "SALVAR");
+                line1.innerHTML = renderEquationHTML(diff, imgCapibara, nom1, "SALVAR", false);
 
                 if (currentConfig.enableCountdown) {
-                    // Si en el panel pones Tamaño Texto Línea 2 en 0, solo se verá el número corriendo abajo
-                    let showLine2 = (currentConfig.battleStyle?.sizeL2 === undefined || currentConfig.battleStyle.sizeL2 > 0);
-                    line2.style.display = showLine2 ? 'block' : 'none';
-                    timerEl.style.display = 'block';
+                    subzone.style.display = 'inline-flex';
 
                     if (!countdownInterval) {
                         timer = currentConfig.countdownSeconds || 30; 
-                        timerEl.innerText = timer;
+                        timerEl.innerText = timer + "s";
                         
                         countdownInterval = setInterval(() => {
                             timer--;
@@ -374,26 +413,23 @@
                                 timer = 0; 
                                 triggerGameOver(latestData.topReiniciar); 
                             }
-                            if (!isGameOver) timerEl.innerText = timer;
+                            if (!isGameOver) timerEl.innerText = timer + "s";
                         }, 1000);
                     }
                 } else {
-                    line2.style.display = 'none';
-                    timerEl.style.display = 'none';
+                    subzone.style.display = 'none';
                 }
             } 
-            // 🟢 ESCENARIO 2: EMPATE (0-0) O VA GANANDO EL EQUIPO 1 (PROTECCIÓN) -> MUESTRA DONAS NECESARIAS PARA RESET
+            // 🟢 ESCENARIO 2: EMPATE (0-0) O VENTAJA EQUIPO 1 -> Si es empate muestra "[Dona] = RESET", si hay ventaja muestra "2 [Dona] = RESET"
             else {
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-                line2.style.display = 'none'; 
-                timerEl.style.display = 'none';
+                subzone.style.display = 'none'; 
 
-                // Si están 0-0 (o iguales), diff2 es (0) + 1 = 1 Dona para Reset. Si tienes 1 de ventaja, (1) + 1 = 2 Donas para Reset.
                 let diff2 = (salvarPts - reiniciarPts) + 1;
-                let img2 = (currentConfig.equipo2.imgUnidad || "").trim();
                 let nom2 = (diff2 === 1) ? (currentConfig.equipo2.nombreSingular || "DONA") : (currentConfig.equipo2.nombrePlural || "DONAS");
 
-                line1.innerHTML = renderEquationHTML(diff2, img2, nom2, "RESET");
+                // El último parámetro "true" hace que cuando diff2 sea 1 (empate o 0-0), NO ponga el "1", solo "[Imagen Dona] = RESET"
+                line1.innerHTML = renderEquationHTML(diff2, imgDona, nom2, "RESET", true);
             }
         }
 
