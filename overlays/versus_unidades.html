@@ -41,7 +41,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: 10px; /* Más pegado como en la foto de referencia */
             height: 100px;
         }
 
@@ -49,24 +49,28 @@
             color: #ffea00;
             line-height: 1;
             display: inline-block;
-            font-size: 1.05em;
+            font-size: 1.32em; /* Número más grande para igualar la altura del capibara */
+            margin-right: -2px; /* Pega el número un poquito más a la imagen */
+            transform: translateY(2px);
         }
 
         .eq-gift-img {
-            height: 1.6em; 
+            height: 1.28em; /* Capibara proporcionado al tamaño del número y texto */
             width: auto;
-            min-height: 65px;
-            max-height: 115px;
+            min-height: 54px;
+            max-height: 85px;
             object-fit: contain;
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55));
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));
         }
 
         .eq-label {
             color: #ffffff;
             line-height: 1;
             display: inline-block;
+            font-size: 1.08em;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
+            transform: translateY(2px);
         }
 
         /* 📌 BLOQUE DE CUENTA ATRÁS ABAJO */
@@ -173,7 +177,7 @@
                 shadowOpacity: 0.85,
                 shadowDistance: 4,
                 colorL1: "#ffea00",
-                sizeL1: 52,
+                sizeL1: 58,
                 colorL2: "#ff0055",
                 sizeL2: 44,
                 colorTimer: "#ffffff",
@@ -228,7 +232,7 @@
             let strokePx = Math.max(baseStroke * 3.5, 7); 
 
             const l1 = document.getElementById('countdown-line1-text');
-            l1.style.fontSize = (style.sizeL1 || 52) + "px";
+            l1.style.fontSize = (style.sizeL1 || 58) + "px";
             l1.style.webkitTextStroke = strokePx + "px #000000";
 
             const l2 = document.getElementById('countdown-line2-text');
