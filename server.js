@@ -47,10 +47,18 @@ let topDonators = {};
 let topSorted = [];
 let teamSalvar = { total: 0, donators: {} };
 let teamReiniciar = { total: 0, donators: {} };
+
+// Unidades Normales (Capibara vs Dona)
 let teamSalvarUnidades = { total: 0 };
 let teamReiniciarUnidades = { total: 0 };
 let lastDonatorSalvarUnid = { name: 'ESPERANDO', avatar: '' };
 let lastDonatorReiniciarUnid = { name: 'ESPERANDO', avatar: '' };
+
+// ⚡ Súper Unidades (Sandía vs Galaxia - Prioridad)
+let teamSuperSalvarUnidades = { total: 0 };
+let teamSuperReiniciarUnidades = { total: 0 };
+let lastDonatorSuperSalvar = { name: 'ESPERANDO', avatar: '' };
+let lastDonatorSuperReiniciar = { name: 'ESPERANDO', avatar: '' };
 
 let catalogoGlobal = [];
 let currentTotalLikes = 0; 
@@ -72,10 +80,19 @@ let configGlobal = {
     equipo1: { nombre: "SALVAR", sub: "GG", color: "#00ff66", regalos: regalosEq1Defecto, joinWords: "chicos, heroes, salvar, 1" },
     equipo2: { nombre: "REINICIAR", sub: "ROSA", color: "#ff003c", regalos: regalosEq2Defecto, joinWords: "chicas, villanos, reiniciar, 2" },
     unidades: {
-        equipo1: { nombre: "SALVAR", nombreSingular: "CAPIBARA", nombrePlural: "CAPIBARAS", color: "#00ff66", imgUnidad: "", regalos: [] },
-        equipo2: { nombre: "REINICIAR", nombreSingular: "DONA", nombrePlural: "DONAS", color: "#ff003c", imgUnidad: "", regalos: [] },
-        enableCountdown: true, countdownSeconds: 30,
-        battleStyle: { fontFamily: "'Luckiest Guy', cursive", textStroke: 2, shadowOpacity: 1.0, shadowDistance: 4, colorL1: "#ffd700", sizeL1: 30, colorL2: "#ff003c", sizeL2: 45, colorTimer: "#ffffff", sizeTimer: 140 }
+        equipo1: { nombre: "EQUIPO 1", nombreSingular: "CAPIBARA", nombrePlural: "CAPIBARAS", color: "#00ff66", imgUnidad: "https://i.imgur.com/OdX4lkD.png", regalos: [] },
+        equipo2: { nombre: "EQUIPO 2", nombreSingular: "DONA", nombrePlural: "DONAS", color: "#ff003c", imgUnidad: "https://i.imgur.com/Wwy2Kzf.png", regalos: [] },
+        enableCountdown: true, countdownSeconds: 60,
+        superReset: {
+            enabled: true,
+            countdownSeconds: 10,
+            customText: "SALVAR INSTANTÁNEAMENTE",
+            imgSalvar: "",
+            imgReiniciar: "",
+            regalosSalvar: [],
+            regalosReiniciar: []
+        },
+        battleStyle: { fontFamily: "'Luckiest Guy', cursive", textStroke: 2.5, shadowOpacity: 0.85, shadowDistance: 4, colorL1: "#ffea00", sizeL1: 52, colorL2: "#ff0055", sizeL2: 44, colorTimer: "#ffffff", sizeTimer: 130 }
     },
     enableCountdown: true, countdownSeconds: 30, showTopText: true, showDonatorCoins: true,
     showEmoticons: true, roundGifts: true, showTopDonators: true,
@@ -97,6 +114,17 @@ if (fs.existsSync(pathData)) {
 
         if(!configGlobal.equipo1.joinWords) configGlobal.equipo1.joinWords = "chicos, heroes, salvar, 1";
         if(!configGlobal.equipo2.joinWords) configGlobal.equipo2.joinWords = "chicas, villanos, reiniciar, 2";
+        if(!configGlobal.unidades.superReset) {
+            configGlobal.unidades.superReset = {
+                enabled: true,
+                countdownSeconds: 10,
+                customText: "SALVAR INSTANTÁNEAMENTE",
+                imgSalvar: "",
+                imgReiniciar: "",
+                regalosSalvar: [],
+                regalosReiniciar: []
+            };
+        }
         if(!configGlobal.rachaVersus) configGlobal.rachaVersus = { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, continuousMode: true };
         if(configGlobal.rachaVersus.continuousMode === undefined) configGlobal.rachaVersus.continuousMode = true;
         if(!configGlobal.bolita) configGlobal.bolita = { multiplicador: 2, chatWord: "globos, jugar", chatGlobos: 1, chatCooldown: 60, likesMeta: 50, likesGlobos: 1, followGlobos: 5, followCooldown: 300, allowFree: true, quiereMeGlobos: 60 };
@@ -188,7 +216,16 @@ function emitSalvarUpdate(target) {
     let topReiniciar = Object.entries(teamReiniciar.donators).map(([name, info]) => ({ name: info.displayName, coins: info.coins, avatar: info.avatar })).sort((a, b) => b.coins - a.coins)[0] || { name: 'ESPERANDO', coins: 0, avatar: '' };
     
     target.emit('actualizacion_salvar', { totalSalvar: teamSalvar.total, totalReiniciar: teamReiniciar.total, topSalvar: topSalvar, topReiniciar: topReiniciar });
-    target.emit('actualizacion_unidades', { totalSalvar: teamSalvarUnidades.total, totalReiniciar: teamReiniciarUnidades.total, topSalvar: lastDonatorSalvarUnid, topReiniciar: lastDonatorReiniciarUnid });
+    target.emit('actualizacion_unidades', { 
+        totalSalvar: teamSalvarUnidades.total, 
+        totalReiniciar: teamReiniciarUnidades.total, 
+        topSalvar: lastDonatorSalvarUnid, 
+        topReiniciar: lastDonatorReiniciarUnid,
+        totalSuperSalvar: teamSuperSalvarUnidades.total,
+        totalSuperReiniciar: teamSuperReiniciarUnidades.total,
+        topSuperSalvar: lastDonatorSuperSalvar,
+        topSuperReiniciar: lastDonatorSuperReiniciar
+    });
 }
 
 function desconectarTikTok() {
@@ -395,7 +432,14 @@ function conectarTikTok(usuario) {
                 
                 actualizarConfigAsignada(configGlobal.equipo1.regalos);
                 actualizarConfigAsignada(configGlobal.equipo2.regalos);
-                if(configGlobal.unidades) { actualizarConfigAsignada(configGlobal.unidades.equipo1.regalos); actualizarConfigAsignada(configGlobal.unidades.equipo2.regalos); }
+                if(configGlobal.unidades) { 
+                    actualizarConfigAsignada(configGlobal.unidades.equipo1.regalos); 
+                    actualizarConfigAsignada(configGlobal.unidades.equipo2.regalos);
+                    if(configGlobal.unidades.superReset) {
+                        actualizarConfigAsignada(configGlobal.unidades.superReset.regalosSalvar);
+                        actualizarConfigAsignada(configGlobal.unidades.superReset.regalosReiniciar);
+                    }
+                }
                 if(configGlobal.winsRuleta) { actualizarConfigAsignada(configGlobal.winsRuleta.regalosSumar); actualizarConfigAsignada(configGlobal.winsRuleta.regalosRestar); }
                 
                 guardarEnArchivo(); io.emit('config_actual', configGlobal); 
@@ -527,6 +571,7 @@ function conectarTikTok(usuario) {
         }
 
         if (configGlobal.unidades) {
+            // 1. Verificar Regalos Normales de Unidades (Capibara vs Dona)
             let isSalvarUnidad = configGlobal.unidades.equipo1.regalos.some(r => Number(r.id) === giftId);
             let isReiniciarUnidad = configGlobal.unidades.equipo2.regalos.some(r => Number(r.id) === giftId);
             
@@ -538,6 +583,23 @@ function conectarTikTok(usuario) {
                 teamReiniciarUnidades.total += cantidadAProcesar;
                 lastDonatorReiniciarUnid = { name: cleanName, avatar: avatarUrl };
                 io.emit('poder_salvar_unidades', { side: 'reiniciar', amount: cantidadAProcesar });
+            }
+
+            // 2. ⚡ Verificar Regalos de SÚPER RESET / SÚPER SALVAR (Sandía vs Galaxia)
+            if (configGlobal.unidades.superReset && configGlobal.unidades.superReset.enabled !== false) {
+                let sr = configGlobal.unidades.superReset;
+                let isSuperSalvar = (sr.regalosSalvar || []).some(r => Number(r.id) === giftId);
+                let isSuperReiniciar = (sr.regalosReiniciar || []).some(r => Number(r.id) === giftId);
+
+                if (isSuperSalvar) {
+                    teamSuperSalvarUnidades.total += cantidadAProcesar;
+                    lastDonatorSuperSalvar = { name: cleanName, avatar: avatarUrl };
+                    io.emit('poder_salvar_unidades', { side: 'salvar', amount: cantidadAProcesar * 5 });
+                } else if (isSuperReiniciar) {
+                    teamSuperReiniciarUnidades.total += cantidadAProcesar;
+                    lastDonatorSuperReiniciar = { name: cleanName, avatar: avatarUrl };
+                    io.emit('poder_salvar_unidades', { side: 'reiniciar', amount: cantidadAProcesar * 5 });
+                }
             }
         }
 
@@ -763,6 +825,25 @@ io.on('connection', (socket) => {
         if (cantidad > 0) io.emit('poder_salvar_unidades', { side: data.equipo === 1 ? 'salvar' : 'reiniciar', amount: cantidad });
     });
 
+    // ⚡ Modificar puntos de Súper Unidades manualmente
+    socket.on('modificar_puntos_super_unidades', (data) => {
+        let cantidad = parseInt(data.cantidad) || 0;
+        if (cantidad === 0) return;
+
+        if (data.equipo === 1) { 
+            teamSuperSalvarUnidades.total += cantidad; 
+            if (teamSuperSalvarUnidades.total < 0) teamSuperSalvarUnidades.total = 0; 
+            lastDonatorSuperSalvar = { name: 'MANUAL', avatar: '' };
+        } 
+        else if (data.equipo === 2) { 
+            teamSuperReiniciarUnidades.total += cantidad; 
+            if (teamSuperReiniciarUnidades.total < 0) teamSuperReiniciarUnidades.total = 0; 
+            lastDonatorSuperReiniciar = { name: 'MANUAL', avatar: '' };
+        }
+        emitSalvarUpdate(io);
+        if (cantidad > 0) io.emit('poder_salvar_unidades', { side: data.equipo === 1 ? 'salvar' : 'reiniciar', amount: cantidad * 5 });
+    });
+
     socket.on('importar_catalogo', (nuevoData) => {
         if (Array.isArray(nuevoData)) {
             nuevoData.forEach(item => { let idx = catalogoGlobal.findIndex(g => g.id === item.id); if (idx === -1) catalogoGlobal.push(item); else catalogoGlobal[idx] = { ...catalogoGlobal[idx], ...item }; });
@@ -802,6 +883,18 @@ io.on('connection', (socket) => {
         teamReiniciarUnidades = { total: 0 };
         lastDonatorSalvarUnid = { name: 'ESPERANDO', avatar: '' };
         lastDonatorReiniciarUnid = { name: 'ESPERANDO', avatar: '' };
+        teamSuperSalvarUnidades = { total: 0 };
+        teamSuperReiniciarUnidades = { total: 0 };
+        lastDonatorSuperSalvar = { name: 'ESPERANDO', avatar: '' };
+        lastDonatorSuperReiniciar = { name: 'ESPERANDO', avatar: '' };
+        emitSalvarUpdate(io);
+    });
+
+    socket.on('reset_super_unidades', () => {
+        teamSuperSalvarUnidades = { total: 0 };
+        teamSuperReiniciarUnidades = { total: 0 };
+        lastDonatorSuperSalvar = { name: 'ESPERANDO', avatar: '' };
+        lastDonatorSuperReiniciar = { name: 'ESPERANDO', avatar: '' };
         emitSalvarUpdate(io);
     });
 

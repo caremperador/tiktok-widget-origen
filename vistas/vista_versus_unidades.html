@@ -6,7 +6,9 @@
     <style>
         body { background: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; }
         .box { background: #1a1a24; border: 1px solid #cc00ff; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(204,0,255,0.2); max-width: 900px; margin-bottom: 30px;}
+        .box-super { background: #1c1624; border: 2px solid #ffea00; border-radius: 12px; padding: 25px; box-shadow: 0 5px 20px rgba(255, 234, 0, 0.18); max-width: 900px; margin-bottom: 30px;}
         h3 { color: #cc00ff; margin-top: 0; border-bottom: 1px solid #cc00ff; padding-bottom: 10px; font-size: 18px; }
+        h3.super-title { color: #ffea00; border-bottom-color: #ffea00; }
         
         .top-row { display: flex; gap: 40px; align-items: flex-start; margin-bottom: 25px;}
         .col-layout { display: flex; gap: 30px; }
@@ -25,6 +27,7 @@
         
         .assigned-list { display: flex; flex-wrap: wrap; gap: 8px; }
         .assigned-item { background: #111; border: 1px solid #cc00ff; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: flex; gap: 10px; align-items: center;}
+        .assigned-item-super { background: #111; border: 1px solid #ffea00; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: flex; gap: 10px; align-items: center;}
         .btn-remove { background: none; color: #ff003c; border: none; cursor: pointer; padding: 0; font-weight: bold;}
         
         .btn-guardar { width: 100%; padding: 18px; background: #cc00ff; color: white; font-size: 16px; font-weight: bold; border: none; cursor: pointer; border-radius: 8px; text-transform: uppercase;}
@@ -59,20 +62,21 @@
     </style>
 </head>
 <body>
+    <!-- CAJA 1: BATALLA NORMAL (DONAS VS CAPIBARAS) -->
     <div class="box">
-        <h3><i class="fa-solid fa-cube"></i> Mecánicas de Batalla (Modo Unidades)</h3>
+        <h3><i class="fa-solid fa-cube"></i> Mecánicas de Batalla Normal (Modo Unidades)</h3>
         <div class="top-row">
             <div style="flex: 0.4;">
                 <label style="color: #cc00ff;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás</label>
                 <input type="number" id="input-countdown-sec" value="60" style="margin-bottom: 15px;">
                 
-                <button class="btn-clear" onclick="resetearValores()" style="width: 100%; background: #ff003c; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,0,60,0.4);"><i class="fa-solid fa-skull"></i> Resetear a 0 (Unidades)</button>
+                <button class="btn-clear" onclick="resetearValores()" style="width: 100%; background: #ff003c; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,0,60,0.4);"><i class="fa-solid fa-skull"></i> Resetear Todo a 0</button>
             </div>
             <div style="flex: 1; display: flex; flex-direction: column;">
-                <label class="checkbox-group"><input type="checkbox" id="check-countdown" checked> Activar Cuenta Regresiva</label>
+                <label class="checkbox-group"><input type="checkbox" id="check-countdown" checked> Activar Cuenta Regresiva Normal</label>
                 <p style="font-size: 13px; color: #ccc;">
                     • En <b>Empate (0 - 0)</b> o si gana el Equipo 1, el overlay muestra: <b>[Dona] = RESET</b>.<br>
-                    • Cuando el <b>Equipo 2 (Reset)</b> supera en puntos al Equipo 1 (prueba dándole a <b>+1</b> en el Equipo 2), el overlay muestra exactamente: <b>1 [Capibara] = SALVAR</b> arriba y <b>REINICIANDO EN + Cuenta regresiva</b> abajo.
+                    • Cuando el <b>Equipo 2 (Reset)</b> supera en puntos al Equipo 1, el overlay muestra: <b>[Capibara] = SALVAR</b> arriba y <b>REINICIANDO EN + Cuenta regresiva</b> abajo.
                 </p>
             </div>
         </div>
@@ -105,7 +109,6 @@
                         <input type="number" id="manual-pts-eq1-uni" class="mp-input" placeholder="Cantidad manual...">
                         <button class="btn-mp" style="background:#00ff66; color:black;" onclick="modificarPuntosUnidades(1, 'sumar')"><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <!-- Botones Rápidos Eq 1 -->
                     <div class="quick-btns">
                         <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 1)">+1</button>
                         <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 5)">+5</button>
@@ -145,7 +148,6 @@
                         <input type="number" id="manual-pts-eq2-uni" class="mp-input" placeholder="Cantidad manual...">
                         <button class="btn-mp" style="background:#ff003c; color:white;" onclick="modificarPuntosUnidades(2, 'sumar')"><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <!-- Botones Rápidos Eq 2 -->
                     <div class="quick-btns">
                         <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 1)">+1</button>
                         <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 5)">+5</button>
@@ -160,6 +162,80 @@
         </div>
     </div>
 
+    <!-- ⚡ CAJA 2: MODO SÚPER RESET / SÚPER SALVADA (PRIORIDAD ABSOLUTA - GALAXIA VS SANDÍA) -->
+    <div class="box-super">
+        <h3 class="super-title"><i class="fa-solid fa-bolt"></i> Súper Reset Instantáneo (Prioridad - Ej: Galaxia vs Amor de Sandía)</h3>
+        <div class="top-row">
+            <div style="flex: 0.45;">
+                <label style="color: #ffea00;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás (Súper Reset)</label>
+                <input type="number" id="super-countdown-sec" value="10" style="margin-bottom: 12px;">
+                
+                <button onclick="resetearSuperValores()" style="width: 100%; background: #ff9900; color: black; border: none; padding: 12px; border-radius: 6px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;"><i class="fa-solid fa-rotate-left"></i> Resetear solo Súper Reset a 0</button>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                <label class="checkbox-group" style="color: #ffea00;"><input type="checkbox" id="check-super-enabled" checked> Activar Prioridad de Súper Reset</label>
+                <div>
+                    <label style="color: #ffea00;">Texto Inferior en el Overlay (Configurable)</label>
+                    <input type="text" id="super-custom-text" value="SALVAR INSTANTÁNEAMENTE" placeholder="Ej: SALVAR INSTANTÁNEAMENTE">
+                </div>
+                <p style="font-size: 12px; color: #ccc; margin: 0;">
+                    Cuando el Equipo 2 (Súper Reset) va ganando, <b>oculta las Donas/Capibaras</b> y muestra la placa amarilla con los segundos arriba, el icono de salvación (ej. Sandía) al medio y este texto abajo.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-layout">
+            <!-- Equipo 1 Súper Salvar (Ej: Amor de Sandía) -->
+            <div class="team-col" style="border-color: #00ff66;">
+                <label style="color:#00ff66; font-size:14px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Súper Salvada (Ej: Sandía)</label>
+                <div>
+                    <label style="color:#ccc;">URL Imagen Súper Salvada (Opcional: si lo dejas vacío usa el icono del regalo asignado)</label>
+                    <input type="text" id="super-eq1-img" placeholder="URL de la Sandía (o automático del regalo)">
+                </div>
+
+                <div class="manual-points-box">
+                    <div class="mp-header">
+                        <span class="mp-title">Súper Salvadas:</span>
+                        <span class="mp-score" id="lbl-pts-super-eq1" style="color:#00ff66;">0</span>
+                    </div>
+                    <div class="quick-btns">
+                        <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 1)">+1 Sandía</button>
+                        <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 5)">+5</button>
+                    </div>
+                </div>
+
+                <label style="color:#ccc;">Asignar Regalo Caro Salvar (Ej: Amor de Sandía)</label>
+                <div style="display: flex; gap: 10px;"><select id="select-super-eq1"></select><button class="btn-add" onclick="addGiftSuper(1)">Añadir</button></div>
+                <div class="assigned-list" id="list-super-eq1"></div>
+            </div>
+
+            <!-- Equipo 2 Súper Reset (Ej: Galaxia) -->
+            <div class="team-col" style="border-color: #ff003c;">
+                <label style="color:#ff003c; font-size:14px;"><i class="fa-solid fa-meteor"></i> Equipo 2: Súper Reset (Ej: Galaxia)</label>
+                <div>
+                    <label style="color:#ccc;">URL Imagen Súper Reset (Opcional)</label>
+                    <input type="text" id="super-eq2-img" placeholder="URL de la Galaxia (o automático del regalo)">
+                </div>
+
+                <div class="manual-points-box">
+                    <div class="mp-header">
+                        <span class="mp-title">Súper Resets:</span>
+                        <span class="mp-score" id="lbl-pts-super-eq2" style="color:#ff003c;">0</span>
+                    </div>
+                    <div class="quick-btns">
+                        <button class="btn-quick btn-quick-eq2" onclick="sumarSuperRapido(2, 1)">+1 Galaxia (Probar)</button>
+                        <button class="btn-quick btn-quick-eq2" onclick="sumarSuperRapido(2, 5)">+5</button>
+                    </div>
+                </div>
+
+                <label style="color:#ccc;">Asignar Regalo Caro Reset (Ej: Galaxia)</label>
+                <div style="display: flex; gap: 10px;"><select id="select-super-eq2"></select><button class="btn-add" onclick="addGiftSuper(2)">Añadir</button></div>
+                <div class="assigned-list" id="list-super-eq2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAJA 3: DISEÑO Y GUARDADO -->
     <div class="box">
         <h3><i class="fa-solid fa-palette"></i> Diseño del Overlay (Unidades)</h3>
         <div class="design-grid">
@@ -190,7 +266,7 @@
 
             <div class="design-item" style="border-top: 3px solid #ffd700;">
                 <label style="color:#ffd700;">Línea 1 (1 [Foto] = SALVAR)</label>
-                <label style="color:#aaa; font-size:10px;">Color Número</label>
+                <label style="color:#aaa; font-size:10px;">Color Número / Texto Súper</label>
                 <input type="color" id="ds-c1" value="#ffea00">
                 <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
                 <input type="number" id="ds-s1" value="52">
@@ -231,7 +307,11 @@
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
 
-        let globalGifts = []; let eq1GiftsUni = []; let eq2GiftsUni = [];
+        let globalGifts = []; 
+        let eq1GiftsUni = []; 
+        let eq2GiftsUni = [];
+        let superEq1Gifts = [];
+        let superEq2Gifts = [];
         
         function syncColors(pickerId, hexId, labelId) {
             const picker = document.getElementById(pickerId);
@@ -246,22 +326,34 @@
         function renderDropdowns() {
             let u1 = document.getElementById('select-eq1-uni'); 
             let u2 = document.getElementById('select-eq2-uni');
+            let su1 = document.getElementById('select-super-eq1');
+            let su2 = document.getElementById('select-super-eq2');
+
             let vu1 = u1.value; let vu2 = u2.value;
+            let vsu1 = su1.value; let vsu2 = su2.value;
+
             u1.innerHTML = ''; u2.innerHTML = '';
+            su1.innerHTML = ''; su2.innerHTML = '';
             
             globalGifts.forEach(g => { 
                 let enU1 = eq1GiftsUni.some(r => r.id === g.id);
                 let enU2 = eq2GiftsUni.some(r => r.id === g.id);
+                let enSU1 = superEq1Gifts.some(r => r.id === g.id);
+                let enSU2 = superEq2Gifts.some(r => r.id === g.id);
                 
                 let styleBg = ""; let textoAdd = "";
                 if (enU1) { styleBg = "background-color: #004d00; color: #00ff66;"; textoAdd = " ✅ [Eq 1]"; } 
                 else if (enU2) { styleBg = "background-color: #4d0012; color: #ff003c;"; textoAdd = " ✅ [Eq 2]"; }
+                else if (enSU1) { styleBg = "background-color: #1a4d00; color: #ffea00;"; textoAdd = " ⚡ [Súper Salvar]"; }
+                else if (enSU2) { styleBg = "background-color: #4d1a00; color: #ffea00;"; textoAdd = " ⚡ [Súper Reset]"; }
                 
-                let optUni = `<option value="${g.id}" style="${styleBg}">[ID: ${g.id}] ${g.name} (${g.diamonds} Monedas)${textoAdd}</option>`; 
+                let optUni = `<option value="${g.id}" style="${styleBg}">[ID: ${g.id}]${g.name} (${g.diamonds} Monedas)${textoAdd}</option>`; 
                 u1.innerHTML += optUni; u2.innerHTML += optUni; 
+                su1.innerHTML += optUni; su2.innerHTML += optUni;
             });
 
             if(vu1) u1.value = vu1; if(vu2) u2.value = vu2;
+            if(vsu1) su1.value = vsu1; if(vsu2) su2.value = vsu2;
         }
 
         socket.on('config_actual', (config) => {
@@ -295,6 +387,14 @@
             document.getElementById('eq1-color').value = c1; document.getElementById('eq1-hex').value = c1.toUpperCase(); document.getElementById('lbl-eq1').style.color = c1;
             document.getElementById('eq2-color').value = c2; document.getElementById('eq2-hex').value = c2.toUpperCase(); document.getElementById('lbl-eq2').style.color = c2;
 
+            // Cargar configuración de Súper Reset
+            let sConf = uConf.superReset || {};
+            document.getElementById('check-super-enabled').checked = sConf.enabled !== undefined ? sConf.enabled : true;
+            document.getElementById('super-countdown-sec').value = sConf.countdownSeconds || 10;
+            document.getElementById('super-custom-text').value = sConf.customText || "SALVAR INSTANTÁNEAMENTE";
+            document.getElementById('super-eq1-img').value = sConf.imgSalvar || "";
+            document.getElementById('super-eq2-img').value = sConf.imgReiniciar || "";
+
             if(uConf.battleStyle) {
                 document.getElementById('ds-font').value = uConf.battleStyle.fontFamily || "'Luckiest Guy', cursive";
                 document.getElementById('ds-stroke').value = uConf.battleStyle.textStroke || 2.5;
@@ -309,10 +409,14 @@
             }
 
             globalGifts = config.regalosDisponibles || []; 
-            eq1GiftsUni = uConf.equipo1?.regalos || []; eq2GiftsUni = uConf.equipo2?.regalos || [];
+            eq1GiftsUni = uConf.equipo1?.regalos || []; 
+            eq2GiftsUni = uConf.equipo2?.regalos || [];
+            superEq1Gifts = sConf.regalosSalvar || [];
+            superEq2Gifts = sConf.regalosReiniciar || [];
             
             renderDropdowns();
             renderListUni(1); renderListUni(2);
+            renderListSuper(1); renderListSuper(2);
 
             if (needsAutoSave) {
                 guardarConfig(true);
@@ -320,12 +424,18 @@
         });
 
         socket.on('actualizacion_unidades', (data) => {
-            document.getElementById('lbl-pts-eq1-uni').innerText = data.totalSalvar;
-            document.getElementById('lbl-pts-eq2-uni').innerText = data.totalReiniciar;
+            document.getElementById('lbl-pts-eq1-uni').innerText = data.totalSalvar || 0;
+            document.getElementById('lbl-pts-eq2-uni').innerText = data.totalReiniciar || 0;
+            document.getElementById('lbl-pts-super-eq1').innerText = data.totalSuperSalvar || 0;
+            document.getElementById('lbl-pts-super-eq2').innerText = data.totalSuperReiniciar || 0;
         });
 
         function sumarRapido(equipo, cantidad) {
             socket.emit('modificar_puntos_unidades', { equipo: equipo, cantidad: cantidad });
+        }
+
+        function sumarSuperRapido(equipo, cantidad) {
+            socket.emit('modificar_puntos_super_unidades', { equipo: equipo, cantidad: cantidad });
         }
 
         function modificarPuntosUnidades(equipo, accion) {
@@ -340,6 +450,10 @@
             if(confirm("🚨 ¿Estás seguro de reiniciar todos los puntos de unidades a cero?")) {
                 socket.emit('reset_unidades');
             }
+        }
+
+        function resetearSuperValores() {
+            socket.emit('reset_super_unidades');
         }
 
         function renderListUni(team) {
@@ -359,6 +473,26 @@
         function removeGiftUni(team, id) {
             if (team === 1) eq1GiftsUni = eq1GiftsUni.filter(g => g.id !== id); else eq2GiftsUni = eq2GiftsUni.filter(g => g.id !== id);
             renderListUni(team); renderDropdowns(); guardarConfig(true); 
+        }
+
+        // Listas de Regalos de Súper Reset
+        function renderListSuper(team) {
+            let container = document.getElementById(team === 1 ? 'list-super-eq1' : 'list-super-eq2');
+            let arr = team === 1 ? superEq1Gifts : superEq2Gifts; container.innerHTML = '';
+            arr.forEach(g => { container.innerHTML += `<div class="assigned-item-super"><span>⚡ ${g.name}</span><button class="btn-remove" onclick="removeGiftSuper(${team},${g.id})"><i class="fa-solid fa-xmark"></i></button></div>`; });
+        }
+
+        function addGiftSuper(team) {
+            let sel = document.getElementById(team === 1 ? 'select-super-eq1' : 'select-super-eq2');
+            if(!sel.value) return;
+            let gift = globalGifts.find(g => g.id === parseInt(sel.value));
+            let arr = team === 1 ? superEq1Gifts : superEq2Gifts;
+            if (!arr.some(g => g.id === gift.id)) { arr.push(gift); renderListSuper(team); renderDropdowns(); guardarConfig(true); }
+        }
+
+        function removeGiftSuper(team, id) {
+            if (team === 1) superEq1Gifts = superEq1Gifts.filter(g => g.id !== id); else superEq2Gifts = superEq2Gifts.filter(g => g.id !== id);
+            renderListSuper(team); renderDropdowns(); guardarConfig(true); 
         }
 
         function guardarConfig(isSilent = false) {
@@ -385,6 +519,15 @@
                 equipo2: { nombre: document.getElementById('eq2-nombre').value.trim(), nombreSingular: document.getElementById('eq2-sing').value.trim(), nombrePlural: document.getElementById('eq2-plur').value.trim(), color: c2, imgUnidad: img2Val, regalos: eq2GiftsUni },
                 enableCountdown: document.getElementById('check-countdown').checked, 
                 countdownSeconds: parseInt(document.getElementById('input-countdown-sec').value) || 60,
+                superReset: {
+                    enabled: document.getElementById('check-super-enabled').checked,
+                    countdownSeconds: parseInt(document.getElementById('super-countdown-sec').value) || 10,
+                    customText: document.getElementById('super-custom-text').value.trim() || "SALVAR INSTANTÁNEAMENTE",
+                    imgSalvar: document.getElementById('super-eq1-img').value.trim(),
+                    imgReiniciar: document.getElementById('super-eq2-img').value.trim(),
+                    regalosSalvar: superEq1Gifts,
+                    regalosReiniciar: superEq2Gifts
+                },
                 battleStyle: configStyle
             };
 
