@@ -102,7 +102,7 @@
             text-align: center;
         }
 
-        /* ⚡ MODO SÚPER RESET PRIORITARIO (ESTILO CAPTURA DE SANDÍA MEJORADO) */
+        /* ⚡ MODO SÚPER RESET PRIORITARIO (SANDÍA) */
         #super-reset-zone {
             position: absolute;
             top: 44%;
@@ -166,10 +166,10 @@
             line-height: 1;
         }
 
-        /* Texto inferior amarillo con borde negro grueso ("SALVAR INSTANTÁNEAMENTE") */
+        /* Texto inferior amarillo con borde negro grueso ("SALVAR") */
         .super-action-text {
             color: #ffea00;
-            font-size: 46px;
+            font-size: 52px;
             font-weight: 900;
             text-transform: uppercase;
             text-align: center;
@@ -226,13 +226,13 @@
             <!-- ⚡ MODO SÚPER RESET (PRIORIDAD ABSOLUTA) -->
             <div id="super-reset-zone">
                 <div class="super-timer-badge">
-                    <span class="super-timer-num" id="super-timer">10</span>
+                    <span class="super-timer-num" id="super-timer">30</span>
                 </div>
                 <div class="super-gift-wrap">
                     <span class="super-qty-badge" id="super-qty" style="display:none;">2</span>
-                    <img id="super-gift-img" class="super-gift-img" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f349.png">
+                    <img id="super-gift-img" class="super-gift-img" src="https://i.imgur.com/ssCEDme.png">
                 </div>
-                <div class="super-action-text" id="super-action-text">SALVAR INSTANTÁNEAMENTE</div>
+                <div class="super-action-text" id="super-action-text">SALVAR</div>
             </div>
             
             <div id="winner-zone">
@@ -249,7 +249,7 @@
         
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
-        const DEFAULT_WATERMELON_IMG = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f349.png";
+        const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
 
         let currentConfig = {
             equipo1: {
@@ -270,10 +270,9 @@
             countdownSeconds: 30,
             superReset: {
                 enabled: true,
-                countdownSeconds: 10,
-                customText: "SALVAR INSTANTÁNEAMENTE",
-                imgSalvar: "",
-                imgReiniciar: "",
+                countdownSeconds: 30,
+                customText: "SALVAR",
+                imgSalvar: DEFAULT_SANDIA_IMG,
                 regalosSalvar: [],
                 regalosReiniciar: []
             },
@@ -293,7 +292,7 @@
 
         let timer = 30;
         let countdownInterval = null;
-        let superTimer = 10;
+        let superTimer = 30;
         let superCountdownInterval = null;
 
         let audioCtx = null;
@@ -373,6 +372,7 @@
 
         socket.on('config_actual', (config) => {
             if(config && config.unidades) {
+                let sConf = config.unidades.superReset || {};
                 currentConfig = {
                     ...currentConfig,
                     ...config.unidades,
@@ -392,7 +392,14 @@
                     },
                     superReset: {
                         ...currentConfig.superReset,
-                        ...(config.unidades.superReset || {})
+                        ...sConf,
+                        countdownSeconds: sConf.countdownSeconds || 30,
+                        customText: (sConf.customText && sConf.customText.trim() !== "" && sConf.customText !== "SALVAR INSTANTÁNEAMENTE")
+                            ? sConf.customText.trim()
+                            : "SALVAR",
+                        imgSalvar: (sConf.imgSalvar && sConf.imgSalvar.trim() !== "")
+                            ? sConf.imgSalvar.trim()
+                            : DEFAULT_SANDIA_IMG
                     },
                     battleStyle: {
                         ...currentConfig.battleStyle,
@@ -536,14 +543,11 @@
             }
         }
 
-        // Obtiene la imagen de la Sandía (URL manual -> o imagen del regalo de TikTok asignado -> o Sandía por defecto)
+        // Obtiene la imagen de la Sandía (por defecto siempre https://i.imgur.com/ssCEDme.png a menos que alguien ponga otra URL)
         function getSuperSalvarImg() {
             let sr = currentConfig.superReset || {};
             if (sr.imgSalvar && sr.imgSalvar.trim() !== "") return sr.imgSalvar.trim();
-            if (sr.regalosSalvar && sr.regalosSalvar.length > 0 && sr.regalosSalvar[0].image && sr.regalosSalvar[0].image.trim() !== "") {
-                return sr.regalosSalvar[0].image.trim();
-            }
-            return DEFAULT_WATERMELON_IMG;
+            return DEFAULT_SANDIA_IMG;
         }
 
         function procesarActualizacionVisual(data) {
@@ -554,7 +558,7 @@
             let superSalvarPts = data ? (data.totalSuperSalvar || 0) : 0;
             let superReiniciarPts = data ? (data.totalSuperReiniciar || 0) : 0;
 
-            let srConfig = currentConfig.superReset || { enabled: true, countdownSeconds: 10, customText: "SALVAR INSTANTÁNEAMENTE" };
+            let srConfig = currentConfig.superReset || { enabled: true, countdownSeconds: 30, customText: "SALVAR", imgSalvar: DEFAULT_SANDIA_IMG };
             let isSuperLosing = (srConfig.enabled !== false) && (superReiniciarPts > superSalvarPts);
 
             // Si estábamos en Súper Peligro (Galaxia) y nos acaban de salvar con Sandía
@@ -575,7 +579,6 @@
 
             // ⚡ PRIORIDAD ABSOLUTA: MODO SÚPER RESET ACTIVO (Ej: Enviaron Galaxia)
             if (isSuperLosing) {
-                // Pausar cuenta regresiva normal y ocultar Donas/Capibaras
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 line1.style.display = 'none';
                 bottomBlock.style.display = 'none';
@@ -590,11 +593,11 @@
                 }
 
                 document.getElementById('super-gift-img').src = getSuperSalvarImg();
-                document.getElementById('super-action-text').innerText = srConfig.customText || "SALVAR INSTANTÁNEAMENTE";
+                document.getElementById('super-action-text').innerText = srConfig.customText || "SALVAR";
                 superZone.style.display = 'flex';
 
                 if (!superCountdownInterval) {
-                    superTimer = parseInt(srConfig.countdownSeconds) || 10;
+                    superTimer = parseInt(srConfig.countdownSeconds) || 30;
                     superTimerEl.innerText = superTimer;
 
                     superCountdownInterval = setInterval(() => {

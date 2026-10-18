@@ -168,29 +168,29 @@
         <div class="top-row">
             <div style="flex: 0.45;">
                 <label style="color: #ffea00;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás (Súper Reset)</label>
-                <input type="number" id="super-countdown-sec" value="10" style="margin-bottom: 12px;">
+                <input type="number" id="super-countdown-sec" value="30" style="margin-bottom: 12px;">
                 
                 <button onclick="resetearSuperValores()" style="width: 100%; background: #ff9900; color: black; border: none; padding: 12px; border-radius: 6px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;"><i class="fa-solid fa-rotate-left"></i> Resetear solo Súper Reset a 0</button>
             </div>
             <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
                 <label class="checkbox-group" style="color: #ffea00;"><input type="checkbox" id="check-super-enabled" checked> Activar Prioridad de Súper Reset</label>
                 <div>
-                    <label style="color: #ffea00;">Texto Inferior en el Overlay (Configurable)</label>
-                    <input type="text" id="super-custom-text" value="SALVAR INSTANTÁNEAMENTE" placeholder="Ej: SALVAR INSTANTÁNEAMENTE">
+                    <label style="color: #ffea00;">Texto Inferior en el Overlay (Por defecto: SALVAR)</label>
+                    <input type="text" id="super-custom-text" value="SALVAR" placeholder="SALVAR">
                 </div>
                 <p style="font-size: 12px; color: #ccc; margin: 0;">
-                    Cuando el Equipo 2 (Súper Reset) va ganando, <b>oculta las Donas/Capibaras</b> y muestra la placa amarilla con los segundos arriba, el icono de salvación (ej. Sandía) al medio y este texto abajo.
+                    Cuando el Equipo 2 (Súper Reset) va ganando, <b>oculta las Donas/Capibaras</b> y muestra la placa amarilla con los segundos arriba, la imagen de la Sandía al medio y la palabra <b>SALVAR</b> abajo.
                 </p>
             </div>
         </div>
 
         <div class="col-layout">
-            <!-- Equipo 1 Súper Salvar (Ej: Amor de Sandía) -->
+            <!-- Equipo 1 Súper Salvar (Amor de Sandía por defecto) -->
             <div class="team-col" style="border-color: #00ff66;">
-                <label style="color:#00ff66; font-size:14px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Súper Salvada (Ej: Sandía)</label>
+                <label style="color:#00ff66; font-size:14px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Súper Salvada (Sandía)</label>
                 <div>
-                    <label style="color:#ccc;">URL Imagen Súper Salvada (Opcional: si lo dejas vacío usa el icono del regalo asignado)</label>
-                    <input type="text" id="super-eq1-img" placeholder="URL de la Sandía (o automático del regalo)">
+                    <label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen Súper Salvada (Por defecto: Sandía)</label>
+                    <input type="text" id="super-eq1-img" value="https://i.imgur.com/ssCEDme.png">
                 </div>
 
                 <div class="manual-points-box">
@@ -209,13 +209,9 @@
                 <div class="assigned-list" id="list-super-eq1"></div>
             </div>
 
-            <!-- Equipo 2 Súper Reset (Ej: Galaxia) -->
+            <!-- Equipo 2 Súper Reset (Galaxia - Sin campo de URL de imagen) -->
             <div class="team-col" style="border-color: #ff003c;">
-                <label style="color:#ff003c; font-size:14px;"><i class="fa-solid fa-meteor"></i> Equipo 2: Súper Reset (Ej: Galaxia)</label>
-                <div>
-                    <label style="color:#ccc;">URL Imagen Súper Reset (Opcional)</label>
-                    <input type="text" id="super-eq2-img" placeholder="URL de la Galaxia (o automático del regalo)">
-                </div>
+                <label style="color:#ff003c; font-size:14px;"><i class="fa-solid fa-meteor"></i> Equipo 2: Súper Reset (Galaxia)</label>
 
                 <div class="manual-points-box">
                     <div class="mp-header">
@@ -306,6 +302,7 @@
         const socket = io();
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
+        const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
 
         let globalGifts = []; 
         let eq1GiftsUni = []; 
@@ -369,6 +366,11 @@
                 needsAutoSave = true;
             }
 
+            let sConf = uConf.superReset || {};
+            if (!sConf.imgSalvar || sConf.imgSalvar.trim() === "" || !sConf.customText || sConf.customText === "SALVAR INSTANTÁNEAMENTE") {
+                needsAutoSave = true;
+            }
+
             document.getElementById('input-countdown-sec').value = uConf.countdownSeconds || 60;
             document.getElementById('check-countdown').checked = uConf.enableCountdown !== undefined ? uConf.enableCountdown : true;
             
@@ -387,13 +389,11 @@
             document.getElementById('eq1-color').value = c1; document.getElementById('eq1-hex').value = c1.toUpperCase(); document.getElementById('lbl-eq1').style.color = c1;
             document.getElementById('eq2-color').value = c2; document.getElementById('eq2-hex').value = c2.toUpperCase(); document.getElementById('lbl-eq2').style.color = c2;
 
-            // Cargar configuración de Súper Reset
-            let sConf = uConf.superReset || {};
+            // Cargar configuración de Súper Reset con los valores por defecto exactos (30s, SALVAR y Sandía Imgur)
             document.getElementById('check-super-enabled').checked = sConf.enabled !== undefined ? sConf.enabled : true;
-            document.getElementById('super-countdown-sec').value = sConf.countdownSeconds || 10;
-            document.getElementById('super-custom-text').value = sConf.customText || "SALVAR INSTANTÁNEAMENTE";
-            document.getElementById('super-eq1-img').value = sConf.imgSalvar || "";
-            document.getElementById('super-eq2-img').value = sConf.imgReiniciar || "";
+            document.getElementById('super-countdown-sec').value = (sConf.countdownSeconds && sConf.countdownSeconds !== 10) ? sConf.countdownSeconds : 30;
+            document.getElementById('super-custom-text').value = (sConf.customText && sConf.customText !== "SALVAR INSTANTÁNEAMENTE") ? sConf.customText : "SALVAR";
+            document.getElementById('super-eq1-img').value = (sConf.imgSalvar && sConf.imgSalvar.trim() !== "") ? sConf.imgSalvar : DEFAULT_SANDIA_IMG;
 
             if(uConf.battleStyle) {
                 document.getElementById('ds-font').value = uConf.battleStyle.fontFamily || "'Luckiest Guy', cursive";
@@ -513,6 +513,7 @@
             let c2 = document.getElementById('eq2-hex').value;
             let img1Val = document.getElementById('eq1-img').value.trim() || DEFAULT_CAPIBARA_IMG;
             let img2Val = document.getElementById('eq2-img').value.trim() || DEFAULT_DONA_IMG;
+            let imgSuperSalvarVal = document.getElementById('super-eq1-img').value.trim() || DEFAULT_SANDIA_IMG;
 
             let configUnidades = {
                 equipo1: { nombre: document.getElementById('eq1-nombre').value.trim(), nombreSingular: document.getElementById('eq1-sing').value.trim(), nombrePlural: document.getElementById('eq1-plur').value.trim(), color: c1, imgUnidad: img1Val, regalos: eq1GiftsUni },
@@ -521,10 +522,9 @@
                 countdownSeconds: parseInt(document.getElementById('input-countdown-sec').value) || 60,
                 superReset: {
                     enabled: document.getElementById('check-super-enabled').checked,
-                    countdownSeconds: parseInt(document.getElementById('super-countdown-sec').value) || 10,
-                    customText: document.getElementById('super-custom-text').value.trim() || "SALVAR INSTANTÁNEAMENTE",
-                    imgSalvar: document.getElementById('super-eq1-img').value.trim(),
-                    imgReiniciar: document.getElementById('super-eq2-img').value.trim(),
+                    countdownSeconds: parseInt(document.getElementById('super-countdown-sec').value) || 30,
+                    customText: document.getElementById('super-custom-text').value.trim() || "SALVAR",
+                    imgSalvar: imgSuperSalvarVal,
                     regalosSalvar: superEq1Gifts,
                     regalosReiniciar: superEq2Gifts
                 },

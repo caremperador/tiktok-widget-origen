@@ -43,6 +43,10 @@ app.get('/ultimo_seguidor', (req, res) => res.sendFile(path.join(__dirname, 'ove
 app.get('/ultimo_quiereme', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'ultimo_quiereme.html')));
 app.get('/wins_ruleta', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'wins_ruleta.html')));
 
+const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
+const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
+const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
+
 let topDonators = {};
 let topSorted = [];
 let teamSalvar = { total: 0, donators: {} };
@@ -80,15 +84,14 @@ let configGlobal = {
     equipo1: { nombre: "SALVAR", sub: "GG", color: "#00ff66", regalos: regalosEq1Defecto, joinWords: "chicos, heroes, salvar, 1" },
     equipo2: { nombre: "REINICIAR", sub: "ROSA", color: "#ff003c", regalos: regalosEq2Defecto, joinWords: "chicas, villanos, reiniciar, 2" },
     unidades: {
-        equipo1: { nombre: "EQUIPO 1", nombreSingular: "CAPIBARA", nombrePlural: "CAPIBARAS", color: "#00ff66", imgUnidad: "https://i.imgur.com/OdX4lkD.png", regalos: [] },
-        equipo2: { nombre: "EQUIPO 2", nombreSingular: "DONA", nombrePlural: "DONAS", color: "#ff003c", imgUnidad: "https://i.imgur.com/Wwy2Kzf.png", regalos: [] },
+        equipo1: { nombre: "EQUIPO 1", nombreSingular: "CAPIBARA", nombrePlural: "CAPIBARAS", color: "#00ff66", imgUnidad: DEFAULT_CAPIBARA_IMG, regalos: [] },
+        equipo2: { nombre: "EQUIPO 2", nombreSingular: "DONA", nombrePlural: "DONAS", color: "#ff003c", imgUnidad: DEFAULT_DONA_IMG, regalos: [] },
         enableCountdown: true, countdownSeconds: 60,
         superReset: {
             enabled: true,
-            countdownSeconds: 10,
-            customText: "SALVAR INSTANTÁNEAMENTE",
-            imgSalvar: "",
-            imgReiniciar: "",
+            countdownSeconds: 30,
+            customText: "SALVAR",
+            imgSalvar: DEFAULT_SANDIA_IMG,
             regalosSalvar: [],
             regalosReiniciar: []
         },
@@ -114,17 +117,35 @@ if (fs.existsSync(pathData)) {
 
         if(!configGlobal.equipo1.joinWords) configGlobal.equipo1.joinWords = "chicos, heroes, salvar, 1";
         if(!configGlobal.equipo2.joinWords) configGlobal.equipo2.joinWords = "chicas, villanos, reiniciar, 2";
+        
+        if(!configGlobal.unidades.equipo1.imgUnidad || configGlobal.unidades.equipo1.imgUnidad.trim() === "") {
+            configGlobal.unidades.equipo1.imgUnidad = DEFAULT_CAPIBARA_IMG;
+        }
+        if(!configGlobal.unidades.equipo2.imgUnidad || configGlobal.unidades.equipo2.imgUnidad.trim() === "") {
+            configGlobal.unidades.equipo2.imgUnidad = DEFAULT_DONA_IMG;
+        }
+
         if(!configGlobal.unidades.superReset) {
             configGlobal.unidades.superReset = {
                 enabled: true,
-                countdownSeconds: 10,
-                customText: "SALVAR INSTANTÁNEAMENTE",
-                imgSalvar: "",
-                imgReiniciar: "",
+                countdownSeconds: 30,
+                customText: "SALVAR",
+                imgSalvar: DEFAULT_SANDIA_IMG,
                 regalosSalvar: [],
                 regalosReiniciar: []
             };
+        } else {
+            if (!configGlobal.unidades.superReset.imgSalvar || configGlobal.unidades.superReset.imgSalvar.trim() === "") {
+                configGlobal.unidades.superReset.imgSalvar = DEFAULT_SANDIA_IMG;
+            }
+            if (!configGlobal.unidades.superReset.customText || configGlobal.unidades.superReset.customText === "SALVAR INSTANTÁNEAMENTE") {
+                configGlobal.unidades.superReset.customText = "SALVAR";
+            }
+            if (!configGlobal.unidades.superReset.countdownSeconds || configGlobal.unidades.superReset.countdownSeconds === 10) {
+                configGlobal.unidades.superReset.countdownSeconds = 30;
+            }
         }
+
         if(!configGlobal.rachaVersus) configGlobal.rachaVersus = { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, continuousMode: true };
         if(configGlobal.rachaVersus.continuousMode === undefined) configGlobal.rachaVersus.continuousMode = true;
         if(!configGlobal.bolita) configGlobal.bolita = { multiplicador: 2, chatWord: "globos, jugar", chatGlobos: 1, chatCooldown: 60, likesMeta: 50, likesGlobos: 1, followGlobos: 5, followCooldown: 300, allowFree: true, quiereMeGlobos: 60 };
@@ -161,6 +182,7 @@ if (catalogoGlobal.length === 0) {
     fs.writeFileSync(pathCatalogo, JSON.stringify(catalogoGlobal, null, 4));
 }
 configGlobal.regalosDisponibles = catalogoGlobal;
+guardarEnArchivo();
 
 function guardarEnArchivo() { 
     try { fs.writeFileSync(pathData, JSON.stringify(configGlobal, null, 4)); fs.writeFileSync(pathCatalogo, JSON.stringify(catalogoGlobal, null, 4)); } catch (err) {}
