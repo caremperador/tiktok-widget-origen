@@ -52,7 +52,6 @@
         .mp-input { padding:10px !important; flex:1; background: #000 !important; }
         .btn-mp { border:none; border-radius:6px; font-weight:bold; cursor:pointer; padding: 0 15px; font-size: 16px;}
 
-        /* Botones rápidos +1, +5, +10 */
         .quick-btns { display: flex; gap: 8px; margin-top: 10px; }
         .btn-quick { flex: 1; padding: 9px 0; border: none; border-radius: 6px; font-weight: 900; font-size: 14px; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
         .btn-quick:hover { filter: brightness(1.15); }
@@ -82,7 +81,6 @@
         </div>
 
         <div class="col-layout">
-            <!-- Equipo 1 Unidades (Capibara por defecto) -->
             <div class="team-col" style="border-color: #00ff66;">
                 <div><label style="color:#00ff66;" id="lbl-eq1">Nombre Equipo 1 (Salvar)</label><input type="text" id="eq1-nombre" value="EQUIPO 1"></div>
                 <div><label style="color:#ccc;">Color de Equipo</label>
@@ -121,7 +119,6 @@
                 <div class="assigned-list" id="list-eq1-uni"></div>
             </div>
 
-            <!-- Equipo 2 Unidades (Dona por defecto) -->
             <div class="team-col" style="border-color: #ff003c;">
                 <div><label style="color:#ff003c;" id="lbl-eq2">Nombre Equipo 2 (Reset)</label><input type="text" id="eq2-nombre" value="EQUIPO 2"></div>
                 <div><label style="color:#ccc;">Color de Equipo</label>
@@ -162,9 +159,9 @@
         </div>
     </div>
 
-    <!-- ⚡ CAJA 2: MODO SÚPER RESET / SÚPER SALVADA (PRIORIDAD ABSOLUTA - GALAXIA VS SANDÍA) -->
+    <!-- ⚡ CAJA 2: MODO SÚPER RESET / SÚPER SALVADA (SANDÍA + CORAL POR DEFECTO) -->
     <div class="box-super">
-        <h3 class="super-title"><i class="fa-solid fa-bolt"></i> Súper Reset Instantáneo (Prioridad - Ej: Galaxia vs Amor de Sandía)</h3>
+        <h3 class="super-title"><i class="fa-solid fa-bolt"></i> Súper Reset Instantáneo (Prioridad - Sandía / Coral vs Galaxia)</h3>
         <div class="top-row">
             <div style="flex: 0.45;">
                 <label style="color: #ffea00;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás (Súper Reset)</label>
@@ -178,19 +175,31 @@
                     <label style="color: #ffea00;">Texto Inferior en el Overlay (Por defecto: SALVAR)</label>
                     <input type="text" id="super-custom-text" value="SALVAR" placeholder="SALVAR">
                 </div>
-                <p style="font-size: 12px; color: #ccc; margin: 0;">
-                    Cuando el Equipo 2 (Súper Reset) va ganando, <b>oculta las Donas/Capibaras</b> y muestra la placa amarilla con los segundos arriba, la imagen de la Sandía al medio y la palabra <b>SALVAR</b> abajo.
-                </p>
             </div>
         </div>
 
         <div class="col-layout">
-            <!-- Equipo 1 Súper Salvar (Amor de Sandía por defecto) -->
+            <!-- Equipo 1 Súper Salvar (Sandía + Coral por defecto) -->
             <div class="team-col" style="border-color: #00ff66;">
-                <label style="color:#00ff66; font-size:14px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Súper Salvada (Sandía)</label>
+                <label style="color:#00ff66; font-size:14px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Súper Salvada (Sandía y Coral)</label>
+                
                 <div>
-                    <label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen Súper Salvada (Por defecto: Sandía)</label>
+                    <label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen 1 (Por defecto: Sandía 1000)</label>
                     <input type="text" id="super-eq1-img" value="https://i.imgur.com/ssCEDme.png">
+                </div>
+
+                <div>
+                    <label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen 2 (Por defecto: Coral 500)</label>
+                    <input type="text" id="super-eq1-img2" value="https://i.imgur.com/7982rrb.png">
+                </div>
+
+                <div>
+                    <label style="color:#ffea00;"><i class="fa-solid fa-eye"></i> ¿Qué imagen mostrar en el Súper Reset?</label>
+                    <select id="super-display-mode" onchange="guardarConfig(true)">
+                        <option value="img1">Mostrar Imagen 1 (Sandía)</option>
+                        <option value="img2">Mostrar Imagen 2 (Coral)</option>
+                        <option value="both">Mostrar Ambas Imágenes (Sandía + Coral)</option>
+                    </select>
                 </div>
 
                 <div class="manual-points-box">
@@ -199,17 +208,17 @@
                         <span class="mp-score" id="lbl-pts-super-eq1" style="color:#00ff66;">0</span>
                     </div>
                     <div class="quick-btns">
-                        <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 1)">+1 Sandía</button>
+                        <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 1)">+1 Salvar</button>
                         <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 5)">+5</button>
                     </div>
                 </div>
 
-                <label style="color:#ccc;">Asignar Regalo Caro Salvar (Ej: Amor de Sandía)</label>
+                <label style="color:#ccc;">Asignar Regalos Caros Salvar (Sandía / Coral)</label>
                 <div style="display: flex; gap: 10px;"><select id="select-super-eq1"></select><button class="btn-add" onclick="addGiftSuper(1)">Añadir</button></div>
                 <div class="assigned-list" id="list-super-eq1"></div>
             </div>
 
-            <!-- Equipo 2 Súper Reset (Galaxia - Sin campo de URL de imagen) -->
+            <!-- Equipo 2 Súper Reset (Galaxia) -->
             <div class="team-col" style="border-color: #ff003c;">
                 <label style="color:#ff003c; font-size:14px;"><i class="fa-solid fa-meteor"></i> Equipo 2: Súper Reset (Galaxia)</label>
 
@@ -231,13 +240,14 @@
         </div>
     </div>
 
-    <!-- CAJA 3: DISEÑO Y GUARDADO -->
+    <!-- CAJA 3: DISEÑO Y TAMAÑOS CONFIGURABLES EN TIEMPO REAL -->
     <div class="box">
-        <h3><i class="fa-solid fa-palette"></i> Diseño del Overlay (Unidades)</h3>
+        <h3><i class="fa-solid fa-palette"></i> Diseño y Tamaños del Overlay (Configurable en Vivo)</h3>
+        <p style="font-size:12px; color:#aaa; margin-top:-5px;">Cambia cualquier tamaño en píxeles (px) o escala (%) y se reflejará inmediatamente en tu overlay al cambiar el número o guardar.</p>
         <div class="design-grid">
             <div class="design-item">
                 <label style="color:#ccc;">Tipografía y Borde</label>
-                <select id="ds-font" style="margin-bottom: 5px;">
+                <select id="ds-font" style="margin-bottom: 5px;" onchange="guardarConfig(true)">
                     <option value="'Luckiest Guy', cursive">Luckiest Guy (Gaming)</option>
                     <option value="'Lilita One', cursive">Lilita One (Gordita)</option>
                     <option value="'Lemon', serif">Lemon (Curvas Gorditas)</option>
@@ -249,39 +259,40 @@
                     <option value="'Montserrat', sans-serif">Montserrat (Moderna)</option>
                 </select>
                 <label style="color:#aaa; font-size:10px;">Grosor Borde Negro</label>
-                <input type="number" id="ds-stroke" step="0.5" value="2.5">
+                <input type="number" id="ds-stroke" step="0.5" value="2.5" onchange="guardarConfig(true)">
             </div>
 
             <div class="design-item">
-                <label style="color:#ccc;">Sombras (Text Shadow)</label>
-                <label style="color:#aaa; font-size:10px;">Opacidad (0.0 a 1.0)</label>
-                <input type="number" id="ds-shadow-op" step="0.1" min="0" max="1" value="0.85">
-                <label style="color:#aaa; font-size:10px; margin-top:5px;">Distancia de Sombra (px)</label>
-                <input type="number" id="ds-shadow-dist" step="1" value="4">
+                <label style="color:#ccc;">Sombras y Súper Reset</label>
+                <label style="color:#aaa; font-size:10px;">Opacidad Sombra (0 a 1)</label>
+                <input type="number" id="ds-shadow-op" step="0.1" min="0" max="1" value="0.85" onchange="guardarConfig(true)">
+                <label style="color:#ffea00; font-size:10px; margin-top:5px;">Tamaño Súper Reset (%)</label>
+                <input type="number" id="ds-super-scale" step="5" value="100" onchange="guardarConfig(true)">
+                <input type="hidden" id="ds-shadow-dist" value="4">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ffd700;">
-                <label style="color:#ffd700;">Línea 1 (1 [Foto] = SALVAR)</label>
+                <label style="color:#ffd700;">Línea 1 ([Foto] = SALVAR)</label>
                 <label style="color:#aaa; font-size:10px;">Color Número / Texto Súper</label>
-                <input type="color" id="ds-c1" value="#ffea00">
+                <input type="color" id="ds-c1" value="#ffea00" onchange="guardarConfig(true)">
                 <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
-                <input type="number" id="ds-s1" value="52">
+                <input type="number" id="ds-s1" value="52" step="2" onchange="guardarConfig(true)">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ff003c;">
                 <label style="color:#ff003c;">Línea 2 (REINICIANDO EN)</label>
                 <label style="color:#aaa; font-size:10px;">Color</label>
-                <input type="color" id="ds-c2" value="#ff0055">
-                <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
-                <input type="number" id="ds-s2" value="44">
+                <input type="color" id="ds-c2" value="#ff0055" onchange="guardarConfig(true)">
+                <label style="color:#ffd700; font-size:10px; margin-top:5px;">Tamaño "REINICIANDO EN" (px)</label>
+                <input type="number" id="ds-s2" value="30" step="2" onchange="guardarConfig(true)">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ffffff;">
                 <label style="color:#ffffff;">Números (Segundos)</label>
                 <label style="color:#aaa; font-size:10px;">Color</label>
-                <input type="color" id="ds-ct" value="#ffffff">
-                <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
-                <input type="number" id="ds-st" value="130">
+                <input type="color" id="ds-ct" value="#ffffff" onchange="guardarConfig(true)">
+                <label style="color:#ffd700; font-size:10px; margin-top:5px;">Tamaño Segundos (px)</label>
+                <input type="number" id="ds-st" value="82" step="2" onchange="guardarConfig(true)">
             </div>
         </div>
 
@@ -303,6 +314,7 @@
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
         const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
+        const DEFAULT_CORAL_IMG = "https://i.imgur.com/7982rrb.png";
 
         let globalGifts = []; 
         let eq1GiftsUni = []; 
@@ -367,7 +379,7 @@
             }
 
             let sConf = uConf.superReset || {};
-            if (!sConf.imgSalvar || sConf.imgSalvar.trim() === "" || !sConf.customText || sConf.customText === "SALVAR INSTANTÁNEAMENTE") {
+            if (!sConf.imgSalvar || sConf.imgSalvar.trim() === "" || !sConf.imgSalvar2 || sConf.imgSalvar2.trim() === "") {
                 needsAutoSave = true;
             }
 
@@ -389,23 +401,25 @@
             document.getElementById('eq1-color').value = c1; document.getElementById('eq1-hex').value = c1.toUpperCase(); document.getElementById('lbl-eq1').style.color = c1;
             document.getElementById('eq2-color').value = c2; document.getElementById('eq2-hex').value = c2.toUpperCase(); document.getElementById('lbl-eq2').style.color = c2;
 
-            // Cargar configuración de Súper Reset con los valores por defecto exactos (30s, SALVAR y Sandía Imgur)
             document.getElementById('check-super-enabled').checked = sConf.enabled !== undefined ? sConf.enabled : true;
-            document.getElementById('super-countdown-sec').value = (sConf.countdownSeconds && sConf.countdownSeconds !== 10) ? sConf.countdownSeconds : 30;
-            document.getElementById('super-custom-text').value = (sConf.customText && sConf.customText !== "SALVAR INSTANTÁNEAMENTE") ? sConf.customText : "SALVAR";
+            document.getElementById('super-countdown-sec').value = sConf.countdownSeconds || 30;
+            document.getElementById('super-custom-text').value = sConf.customText || "SALVAR";
             document.getElementById('super-eq1-img').value = (sConf.imgSalvar && sConf.imgSalvar.trim() !== "") ? sConf.imgSalvar : DEFAULT_SANDIA_IMG;
+            document.getElementById('super-eq1-img2').value = (sConf.imgSalvar2 && sConf.imgSalvar2.trim() !== "") ? sConf.imgSalvar2 : DEFAULT_CORAL_IMG;
+            document.getElementById('super-display-mode').value = sConf.displayMode || "img1";
 
             if(uConf.battleStyle) {
                 document.getElementById('ds-font').value = uConf.battleStyle.fontFamily || "'Luckiest Guy', cursive";
                 document.getElementById('ds-stroke').value = uConf.battleStyle.textStroke || 2.5;
                 document.getElementById('ds-shadow-op').value = uConf.battleStyle.shadowOpacity !== undefined ? uConf.battleStyle.shadowOpacity : 0.85;
                 document.getElementById('ds-shadow-dist').value = uConf.battleStyle.shadowDistance !== undefined ? uConf.battleStyle.shadowDistance : 4;
+                document.getElementById('ds-super-scale').value = uConf.battleStyle.superScale || 100;
                 document.getElementById('ds-c1').value = uConf.battleStyle.colorL1 || "#ffea00";
                 document.getElementById('ds-s1').value = uConf.battleStyle.sizeL1 || 52;
                 document.getElementById('ds-c2').value = uConf.battleStyle.colorL2 || "#ff0055";
-                document.getElementById('ds-s2').value = uConf.battleStyle.sizeL2 || 44;
+                document.getElementById('ds-s2').value = uConf.battleStyle.sizeL2 || 30;
                 document.getElementById('ds-ct').value = uConf.battleStyle.colorTimer || "#ffffff";
-                document.getElementById('ds-st').value = uConf.battleStyle.sizeTimer || 130;
+                document.getElementById('ds-st').value = uConf.battleStyle.sizeTimer || 82;
             }
 
             globalGifts = config.regalosDisponibles || []; 
@@ -475,7 +489,6 @@
             renderListUni(team); renderDropdowns(); guardarConfig(true); 
         }
 
-        // Listas de Regalos de Súper Reset
         function renderListSuper(team) {
             let container = document.getElementById(team === 1 ? 'list-super-eq1' : 'list-super-eq2');
             let arr = team === 1 ? superEq1Gifts : superEq2Gifts; container.innerHTML = '';
@@ -501,12 +514,13 @@
                 textStroke: parseFloat(document.getElementById('ds-stroke').value) || 2.5,
                 shadowOpacity: parseFloat(document.getElementById('ds-shadow-op').value),
                 shadowDistance: parseInt(document.getElementById('ds-shadow-dist').value) || 4,
+                superScale: parseInt(document.getElementById('ds-super-scale').value) || 100,
                 colorL1: document.getElementById('ds-c1').value,
                 sizeL1: parseInt(document.getElementById('ds-s1').value) || 52,
                 colorL2: document.getElementById('ds-c2').value,
-                sizeL2: parseInt(document.getElementById('ds-s2').value) || 44,
+                sizeL2: parseInt(document.getElementById('ds-s2').value) || 30,
                 colorTimer: document.getElementById('ds-ct').value,
-                sizeTimer: parseInt(document.getElementById('ds-st').value) || 130
+                sizeTimer: parseInt(document.getElementById('ds-st').value) || 82
             };
 
             let c1 = document.getElementById('eq1-hex').value;
@@ -514,6 +528,7 @@
             let img1Val = document.getElementById('eq1-img').value.trim() || DEFAULT_CAPIBARA_IMG;
             let img2Val = document.getElementById('eq2-img').value.trim() || DEFAULT_DONA_IMG;
             let imgSuperSalvarVal = document.getElementById('super-eq1-img').value.trim() || DEFAULT_SANDIA_IMG;
+            let imgSuperSalvarVal2 = document.getElementById('super-eq1-img2').value.trim() || DEFAULT_CORAL_IMG;
 
             let configUnidades = {
                 equipo1: { nombre: document.getElementById('eq1-nombre').value.trim(), nombreSingular: document.getElementById('eq1-sing').value.trim(), nombrePlural: document.getElementById('eq1-plur').value.trim(), color: c1, imgUnidad: img1Val, regalos: eq1GiftsUni },
@@ -525,6 +540,8 @@
                     countdownSeconds: parseInt(document.getElementById('super-countdown-sec').value) || 30,
                     customText: document.getElementById('super-custom-text').value.trim() || "SALVAR",
                     imgSalvar: imgSuperSalvarVal,
+                    imgSalvar2: imgSuperSalvarVal2,
+                    displayMode: document.getElementById('super-display-mode').value || "img1",
                     regalosSalvar: superEq1Gifts,
                     regalosReiniciar: superEq2Gifts
                 },

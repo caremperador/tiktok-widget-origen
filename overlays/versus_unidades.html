@@ -19,14 +19,13 @@
             -webkit-text-stroke-linejoin: round;
         }
 
-        /* Contenedor general */
         .countdown-zone {
             position: relative;
             width: 100vw;
             height: 100vh;
         }
         
-        /* 📌 MODO NORMAL: LÍNEA 1 POSICIÓN 100% FIJA E INMÓVIL (Arriba) */
+        /* 📌 MODO NORMAL: LÍNEA 1 POSICIÓN 100% FIJA E INMÓVIL (Arriba: 32%) */
         .countdown-line1 { 
             position: absolute;
             top: 32%; 
@@ -58,7 +57,7 @@
             height: 1.28em;
             width: auto;
             min-height: 54px;
-            max-height: 85px;
+            max-height: 95px;
             object-fit: contain;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));
         }
@@ -73,7 +72,7 @@
             transform: translateY(2px);
         }
 
-        /* 📌 MODO NORMAL: BLOQUE DE CUENTA ATRÁS ABAJO */
+        /* 📌 MODO NORMAL: BLOQUE DE CUENTA ATRÁS ABAJO (Fijo en top: 47%) */
         .countdown-bottom-block {
             position: absolute;
             top: 47%;
@@ -89,10 +88,10 @@
 
         .countdown-line2 { 
             font-weight: 900; 
-            letter-spacing: 2.5px;
+            letter-spacing: 2px;
             text-align: center; 
             line-height: 1.05;
-            margin-bottom: -4px;
+            margin-bottom: -2px;
             text-transform: uppercase;
         }
         
@@ -102,32 +101,36 @@
             text-align: center;
         }
 
-        /* ⚡ MODO SÚPER RESET PRIORITARIO (SANDÍA) */
+        /* ⚡ MODO SÚPER RESET: SIEMPRE ABAJO (Misma coordenada exacta top: 47%) */
         #super-reset-zone {
             position: absolute;
-            top: 44%;
+            top: 47%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
+            transform-origin: top center;
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             z-index: 4;
-            width: 100%;
+            white-space: nowrap;
         }
 
-        /* Placa amarilla superior con solo los segundos */
         .super-timer-badge {
-            background: linear-gradient(180deg, #fff000 0%, #ffcc00 100%);
+            background: linear-gradient(180deg, #fff633 0%, #ffc400 100%);
             border: 4px solid #000000;
             border-radius: 14px;
-            padding: 6px 36px 2px 36px;
-            box-shadow: 0 7px 0 #000000, 0 0 28px rgba(255, 234, 0, 0.75);
+            padding: 3px 26px 1px 26px;
+            box-shadow: 
+                inset 0 3px 0 rgba(255, 255, 255, 0.75),
+                0 5px 0 #000000, 
+                0 8px 18px rgba(0, 0, 0, 0.65),
+                0 0 20px rgba(255, 215, 0, 0.55);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 8px;
-            animation: superPulse 0.9s ease-in-out infinite;
+            margin-bottom: 4px;
+            animation: superPulse 0.95s ease-in-out infinite;
         }
 
         .super-timer-num {
@@ -135,61 +138,65 @@
             font-family: 'Montserrat', 'Luckiest Guy', sans-serif;
             font-weight: 900;
             font-style: italic;
-            font-size: 62px;
+            font-size: 46px;
             line-height: 1;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
-        /* Imagen del regalo salvador (Sandía) al centro */
         .super-gift-wrap {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin: 2px 0 6px 0;
+            gap: 10px;
+            margin: 0px 0 -4px 0;
+            animation: superFloat 2s ease-in-out infinite;
         }
 
         .super-gift-img {
-            height: 135px;
+            height: 105px;
             width: auto;
-            max-width: 180px;
+            max-width: 145px;
             object-fit: contain;
-            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.75)) drop-shadow(0 0 18px rgba(255,234,0,0.45));
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.75)) drop-shadow(0 0 14px rgba(255, 230, 0, 0.35));
         }
 
         .super-qty-badge {
-            font-size: 54px;
+            font-size: 48px;
             color: #ffea00;
-            -webkit-text-stroke: 7px #000000;
-            text-shadow: 0 5px 0 #000000;
-            margin-right: 10px;
+            -webkit-text-stroke: 6.5px #000000;
+            text-shadow: 0 4px 0 #000000;
+            margin-right: 4px;
             line-height: 1;
         }
 
-        /* Texto inferior amarillo con borde negro grueso ("SALVAR") */
         .super-action-text {
             color: #ffea00;
-            font-size: 52px;
+            font-size: 40px;
             font-weight: 900;
             text-transform: uppercase;
             text-align: center;
-            line-height: 1.08;
+            line-height: 1.02;
             letter-spacing: 2px;
-            max-width: 520px;
-            word-wrap: break-word;
-            -webkit-text-stroke: 8px #000000;
-            text-shadow: 0 5px 0 #000000, 0 8px 14px rgba(0,0,0,0.85);
+            -webkit-text-stroke: 7px #000000;
+            text-shadow: 0 4px 0 #000000, 0 6px 12px rgba(0,0,0,0.85);
+            z-index: 2;
         }
 
         @keyframes superPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.06); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes superFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
         }
 
         #winner-zone {
             position: absolute;
-            top: 45%; left: 50%; transform: translate(-50%, -50%);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
+            top: 47%; left: 50%; transform: translateX(-50%);
+            display: none; flex-direction: column; align-items: center; justify-content: flex-start;
             width: 100%; z-index: 5;
         }
         #winner-avatar {
@@ -214,16 +221,16 @@
     
     <div class="widget-wrapper">
         <div class="countdown-zone" id="countdown-display">
-            <!-- MODO NORMAL: Línea 1 Fija arriba -->
+            <!-- MODO NORMAL: Línea 1 Fija arriba (32%) -->
             <div class="countdown-line1" id="countdown-line1-text"></div>
             
-            <!-- MODO NORMAL: Bloque inferior independiente -->
+            <!-- MODO NORMAL: Bloque inferior independiente (47%) -->
             <div class="countdown-bottom-block" id="countdown-bottom-block">
                 <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
                 <div class="countdown-number" id="timer">30</div>
             </div>
 
-            <!-- ⚡ MODO SÚPER RESET (PRIORIDAD ABSOLUTA) -->
+            <!-- ⚡ MODO SÚPER RESET: SIEMPRE ABAJO (47%) -->
             <div id="super-reset-zone">
                 <div class="super-timer-badge">
                     <span class="super-timer-num" id="super-timer">30</span>
@@ -231,6 +238,7 @@
                 <div class="super-gift-wrap">
                     <span class="super-qty-badge" id="super-qty" style="display:none;">2</span>
                     <img id="super-gift-img" class="super-gift-img" src="https://i.imgur.com/ssCEDme.png">
+                    <img id="super-gift-img2" class="super-gift-img" src="https://i.imgur.com/7982rrb.png" style="display:none;">
                 </div>
                 <div class="super-action-text" id="super-action-text">SALVAR</div>
             </div>
@@ -250,6 +258,7 @@
         const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
         const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
         const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
+        const DEFAULT_CORAL_IMG = "https://i.imgur.com/7982rrb.png";
 
         let currentConfig = {
             equipo1: {
@@ -273,6 +282,8 @@
                 countdownSeconds: 30,
                 customText: "SALVAR",
                 imgSalvar: DEFAULT_SANDIA_IMG,
+                imgSalvar2: DEFAULT_CORAL_IMG,
+                displayMode: "img1",
                 regalosSalvar: [],
                 regalosReiniciar: []
             },
@@ -281,12 +292,13 @@
                 textStroke: 2.5,
                 shadowOpacity: 0.85,
                 shadowDistance: 4,
+                superScale: 100,
                 colorL1: "#ffea00",
-                sizeL1: 58,
+                sizeL1: 52,
                 colorL2: "#ff0055",
-                sizeL2: 44,
+                sizeL2: 30,    /* Por defecto como está ahora, pero 100% libre para agrandar o achicar */
                 colorTimer: "#ffffff",
-                sizeTimer: 130
+                sizeTimer: 82  /* Por defecto como está ahora, pero 100% libre para agrandar o achicar */
             }
         };
 
@@ -338,33 +350,44 @@
             document.body.style.fontFamily = style.fontFamily || "'Luckiest Guy', cursive";
             
             let baseStroke = parseFloat(style.textStroke) || 2.5;
-            let strokePx = Math.max(baseStroke * 3.5, 7); 
+            let strokePx = Math.max(baseStroke * 3.5, 4); 
 
             const l1 = document.getElementById('countdown-line1-text');
-            l1.style.fontSize = (style.sizeL1 || 58) + "px";
+            let finalSizeL1 = parseInt(style.sizeL1) || 52;
+            l1.style.fontSize = finalSizeL1 + "px";
             l1.style.webkitTextStroke = strokePx + "px #000000";
 
+            // Toma directamente el valor que pongas en el panel (por defecto 30px)
+            let finalSizeL2 = parseInt(style.sizeL2) || 30;
             const l2 = document.getElementById('countdown-line2-text');
             l2.style.color = style.colorL2 || "#ff0055"; 
-            l2.style.fontSize = (style.sizeL2 || 44) + "px";
-            l2.style.webkitTextStroke = (strokePx * 0.9) + "px #000000";
+            l2.style.fontSize = finalSizeL2 + "px";
+            l2.style.webkitTextStroke = (strokePx * (finalSizeL2 / 42)) + "px #000000";
 
+            // Toma directamente el valor que pongas en el panel (por defecto 82px)
+            let finalSizeTimer = parseInt(style.sizeTimer) || 82;
             const lt = document.getElementById('timer');
             lt.style.color = style.colorTimer || "#ffffff"; 
-            lt.style.fontSize = (style.sizeTimer || 130) + "px";
-            lt.style.webkitTextStroke = (strokePx * 1.35) + "px #000000";
+            lt.style.fontSize = finalSizeTimer + "px";
+            lt.style.webkitTextStroke = (strokePx * (finalSizeTimer / 78)) + "px #000000";
+
+            // Escala configurable para todo el bloque de Súper Reset (por defecto 100%)
+            let superScaleVal = (parseFloat(style.superScale) || 100) / 100;
+            const superZone = document.getElementById('super-reset-zone');
+            superZone.style.transform = `translateX(-50%) scale(${superScaleVal})`;
 
             const superAction = document.getElementById('super-action-text');
             superAction.style.color = style.colorL1 || "#ffea00";
-            superAction.style.webkitTextStroke = strokePx + "px #000000";
+            superAction.style.webkitTextStroke = (strokePx * 0.9) + "px #000000";
 
             const op = style.shadowOpacity !== undefined ? style.shadowOpacity : 0.85;
             const dist = style.shadowDistance !== undefined ? style.shadowDistance : 4;
             const shadowColor = `rgba(0,0,0,${op})`;
 
             l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
-            l2.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
-            lt.style.textShadow = `0px ${dist + 1}px 0px #000000, 0 0 28px rgba(255, 0, 85, 0.85), 0 0 12px rgba(255, 0, 60, 0.65)`;
+            l2.style.textShadow = `0px ${Math.max(dist - 1, 2)}px 0px #000000, 0px ${dist}px 6px${shadowColor}`;
+            lt.style.textShadow = `0px ${dist}px 0px #000000, 0 0 22px rgba(255, 0, 85, 0.8), 0 0 8px rgba(255, 0, 60, 0.6)`;
+            superAction.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
         }
 
         applyDesign(currentConfig.battleStyle);
@@ -394,12 +417,16 @@
                         ...currentConfig.superReset,
                         ...sConf,
                         countdownSeconds: sConf.countdownSeconds || 30,
-                        customText: (sConf.customText && sConf.customText.trim() !== "" && sConf.customText !== "SALVAR INSTANTÁNEAMENTE")
+                        customText: (sConf.customText && sConf.customText.trim() !== "")
                             ? sConf.customText.trim()
                             : "SALVAR",
                         imgSalvar: (sConf.imgSalvar && sConf.imgSalvar.trim() !== "")
                             ? sConf.imgSalvar.trim()
-                            : DEFAULT_SANDIA_IMG
+                            : DEFAULT_SANDIA_IMG,
+                        imgSalvar2: (sConf.imgSalvar2 && sConf.imgSalvar2.trim() !== "")
+                            ? sConf.imgSalvar2.trim()
+                            : DEFAULT_CORAL_IMG,
+                        displayMode: sConf.displayMode || "img1"
                     },
                     battleStyle: {
                         ...currentConfig.battleStyle,
@@ -543,11 +570,29 @@
             }
         }
 
-        // Obtiene la imagen de la Sandía (por defecto siempre https://i.imgur.com/ssCEDme.png a menos que alguien ponga otra URL)
-        function getSuperSalvarImg() {
+        function updateSuperImages() {
             let sr = currentConfig.superReset || {};
-            if (sr.imgSalvar && sr.imgSalvar.trim() !== "") return sr.imgSalvar.trim();
-            return DEFAULT_SANDIA_IMG;
+            let img1Url = (sr.imgSalvar && sr.imgSalvar.trim() !== "") ? sr.imgSalvar.trim() : DEFAULT_SANDIA_IMG;
+            let img2Url = (sr.imgSalvar2 && sr.imgSalvar2.trim() !== "") ? sr.imgSalvar2.trim() : DEFAULT_CORAL_IMG;
+            let mode = sr.displayMode || "img1";
+
+            let el1 = document.getElementById('super-gift-img');
+            let el2 = document.getElementById('super-gift-img2');
+
+            if (mode === "img2") {
+                el1.src = img2Url;
+                el1.style.display = "inline-block";
+                el2.style.display = "none";
+            } else if (mode === "both") {
+                el1.src = img1Url;
+                el2.src = img2Url;
+                el1.style.display = "inline-block";
+                el2.style.display = "inline-block";
+            } else {
+                el1.src = img1Url;
+                el1.style.display = "inline-block";
+                el2.style.display = "none";
+            }
         }
 
         function procesarActualizacionVisual(data) {
@@ -558,10 +603,9 @@
             let superSalvarPts = data ? (data.totalSuperSalvar || 0) : 0;
             let superReiniciarPts = data ? (data.totalSuperReiniciar || 0) : 0;
 
-            let srConfig = currentConfig.superReset || { enabled: true, countdownSeconds: 30, customText: "SALVAR", imgSalvar: DEFAULT_SANDIA_IMG };
+            let srConfig = currentConfig.superReset || { enabled: true, countdownSeconds: 30, customText: "SALVAR", imgSalvar: DEFAULT_SANDIA_IMG, imgSalvar2: DEFAULT_CORAL_IMG };
             let isSuperLosing = (srConfig.enabled !== false) && (superReiniciarPts > superSalvarPts);
 
-            // Si estábamos en Súper Peligro (Galaxia) y nos acaban de salvar con Sandía
             if (wasSuperLosing && !isSuperLosing && superSalvarPts > 0) {
                 wasSuperLosing = false;
                 if (data.topSuperSalvar && data.topSuperSalvar.name !== 'ESPERANDO' && data.topSuperSalvar.name !== 'MANUAL') {
@@ -577,7 +621,7 @@
             let superZone = document.getElementById('super-reset-zone');
             let superTimerEl = document.getElementById('super-timer');
 
-            // ⚡ PRIORIDAD ABSOLUTA: MODO SÚPER RESET ACTIVO (Ej: Enviaron Galaxia)
+            // ⚡ PRIORIDAD ABSOLUTA: MODO SÚPER RESET ACTIVO
             if (isSuperLosing) {
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 line1.style.display = 'none';
@@ -592,7 +636,7 @@
                     qtyEl.style.display = 'none';
                 }
 
-                document.getElementById('super-gift-img').src = getSuperSalvarImg();
+                updateSuperImages();
                 document.getElementById('super-action-text').innerText = srConfig.customText || "SALVAR";
                 superZone.style.display = 'flex';
 
@@ -614,7 +658,6 @@
                 return;
             }
 
-            // Si no hay Súper Reset activo, aseguramos que la zona Súper esté oculta
             if (superCountdownInterval) { clearInterval(superCountdownInterval); superCountdownInterval = null; }
             superZone.style.display = 'none';
 

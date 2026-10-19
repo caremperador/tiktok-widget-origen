@@ -46,6 +46,7 @@ app.get('/wins_ruleta', (req, res) => res.sendFile(path.join(__dirname, 'overlay
 const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
 const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
 const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
+const DEFAULT_CORAL_IMG = "https://i.imgur.com/7982rrb.png";
 
 let topDonators = {};
 let topSorted = [];
@@ -58,7 +59,7 @@ let teamReiniciarUnidades = { total: 0 };
 let lastDonatorSalvarUnid = { name: 'ESPERANDO', avatar: '' };
 let lastDonatorReiniciarUnid = { name: 'ESPERANDO', avatar: '' };
 
-// ⚡ Súper Unidades (Sandía vs Galaxia - Prioridad)
+// ⚡ Súper Unidades (Sandía / Coral vs Galaxia - Prioridad)
 let teamSuperSalvarUnidades = { total: 0 };
 let teamSuperReiniciarUnidades = { total: 0 };
 let lastDonatorSuperSalvar = { name: 'ESPERANDO', avatar: '' };
@@ -92,10 +93,24 @@ let configGlobal = {
             countdownSeconds: 30,
             customText: "SALVAR",
             imgSalvar: DEFAULT_SANDIA_IMG,
+            imgSalvar2: DEFAULT_CORAL_IMG,
+            displayMode: "img1", // "img1" (Sandía), "img2" (Coral), o "both" (Ambos)
             regalosSalvar: [],
             regalosReiniciar: []
         },
-        battleStyle: { fontFamily: "'Luckiest Guy', cursive", textStroke: 2.5, shadowOpacity: 0.85, shadowDistance: 4, colorL1: "#ffea00", sizeL1: 52, colorL2: "#ff0055", sizeL2: 44, colorTimer: "#ffffff", sizeTimer: 130 }
+        battleStyle: { 
+            fontFamily: "'Luckiest Guy', cursive", 
+            textStroke: 2.5, 
+            shadowOpacity: 0.85, 
+            shadowDistance: 4, 
+            colorL1: "#ffea00", 
+            sizeL1: 52, 
+            colorL2: "#ff0055", 
+            sizeL2: 30, 
+            colorTimer: "#ffffff", 
+            sizeTimer: 82,
+            superScale: 100
+        }
     },
     enableCountdown: true, countdownSeconds: 30, showTopText: true, showDonatorCoins: true,
     showEmoticons: true, roundGifts: true, showTopDonators: true,
@@ -131,6 +146,8 @@ if (fs.existsSync(pathData)) {
                 countdownSeconds: 30,
                 customText: "SALVAR",
                 imgSalvar: DEFAULT_SANDIA_IMG,
+                imgSalvar2: DEFAULT_CORAL_IMG,
+                displayMode: "img1",
                 regalosSalvar: [],
                 regalosReiniciar: []
             };
@@ -138,12 +155,22 @@ if (fs.existsSync(pathData)) {
             if (!configGlobal.unidades.superReset.imgSalvar || configGlobal.unidades.superReset.imgSalvar.trim() === "") {
                 configGlobal.unidades.superReset.imgSalvar = DEFAULT_SANDIA_IMG;
             }
+            if (!configGlobal.unidades.superReset.imgSalvar2 || configGlobal.unidades.superReset.imgSalvar2.trim() === "") {
+                configGlobal.unidades.superReset.imgSalvar2 = DEFAULT_CORAL_IMG;
+            }
+            if (!configGlobal.unidades.superReset.displayMode) {
+                configGlobal.unidades.superReset.displayMode = "img1";
+            }
             if (!configGlobal.unidades.superReset.customText || configGlobal.unidades.superReset.customText === "SALVAR INSTANTÁNEAMENTE") {
                 configGlobal.unidades.superReset.customText = "SALVAR";
             }
             if (!configGlobal.unidades.superReset.countdownSeconds || configGlobal.unidades.superReset.countdownSeconds === 10) {
                 configGlobal.unidades.superReset.countdownSeconds = 30;
             }
+        }
+
+        if (configGlobal.unidades.battleStyle && configGlobal.unidades.battleStyle.superScale === undefined) {
+            configGlobal.unidades.battleStyle.superScale = 100;
         }
 
         if(!configGlobal.rachaVersus) configGlobal.rachaVersus = { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, continuousMode: true };
@@ -593,7 +620,6 @@ function conectarTikTok(usuario) {
         }
 
         if (configGlobal.unidades) {
-            // 1. Verificar Regalos Normales de Unidades (Capibara vs Dona)
             let isSalvarUnidad = configGlobal.unidades.equipo1.regalos.some(r => Number(r.id) === giftId);
             let isReiniciarUnidad = configGlobal.unidades.equipo2.regalos.some(r => Number(r.id) === giftId);
             
@@ -607,7 +633,6 @@ function conectarTikTok(usuario) {
                 io.emit('poder_salvar_unidades', { side: 'reiniciar', amount: cantidadAProcesar });
             }
 
-            // 2. ⚡ Verificar Regalos de SÚPER RESET / SÚPER SALVAR (Sandía vs Galaxia)
             if (configGlobal.unidades.superReset && configGlobal.unidades.superReset.enabled !== false) {
                 let sr = configGlobal.unidades.superReset;
                 let isSuperSalvar = (sr.regalosSalvar || []).some(r => Number(r.id) === giftId);
@@ -847,7 +872,6 @@ io.on('connection', (socket) => {
         if (cantidad > 0) io.emit('poder_salvar_unidades', { side: data.equipo === 1 ? 'salvar' : 'reiniciar', amount: cantidad });
     });
 
-    // ⚡ Modificar puntos de Súper Unidades manualmente
     socket.on('modificar_puntos_super_unidades', (data) => {
         let cantidad = parseInt(data.cantidad) || 0;
         if (cantidad === 0) return;
