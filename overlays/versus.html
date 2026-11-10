@@ -14,7 +14,7 @@
             width: 100vw; height: 100vh; position: relative; 
         }
 
-        .text-con-stroke, .status-zone, .countdown-line1, .countdown-line2, .countdown-number, .text-eq1, .text-eq2, .score, #winner-title, #winner-name {
+        .text-con-stroke, .status-zone, .countdown-line1, .countdown-number, .text-eq1, .text-eq2, .score, #winner-title, #winner-name, .line1-num, .line1-text {
             paint-order: stroke fill; 
         }
 
@@ -71,6 +71,7 @@
         .donator-coins i { margin-right: 4px; color: #ffcc00; } 
         .avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; display: none; }
 
+        /* NUEVOS ESTILOS EXACTOS PARA LA ZONA DE COUNTDOWN Y LAS IMÁGENES */
         .countdown-zone {
             position: absolute;
             top: 58%; 
@@ -79,11 +80,52 @@
             width: 100%;
             display: none; 
             flex-direction: column; align-items: center; justify-content: center; animation: emerge 0.5s ease-out;
+            font-family: 'Lilita One', sans-serif; /* Estilo de letra de la foto */
         }
         
-        .countdown-line1 { font-weight: 900; letter-spacing: 2px; margin-bottom: -5px; z-index: 2; transition: color 0.3s;}
-        .countdown-line2 { font-weight: 900; letter-spacing: 3px; margin-bottom: -20px; z-index: 2; animation: flashRed 1s infinite;}
-        .countdown-number { font-weight: 900; animation: heartbeat 1s infinite; line-height: 1;}
+        .countdown-line1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 55px; /* Tamaño grande para "2 GG = SALVAR" */
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+            z-index: 2;
+            text-shadow: 4px 4px 0px #000, 0px 5px 10px rgba(0,0,0,0.6); /* Sombra 3D exacta */
+        }
+
+        .line1-num {
+            color: #ffea00 !important; /* Amarillo característico */
+            -webkit-text-stroke: 3px black !important;
+        }
+
+        .line1-text {
+            -webkit-text-stroke: 3px black !important;
+        }
+
+        .line1-icon {
+            height: 1.1em;
+            width: 1.1em;
+            object-fit: contain;
+            filter: drop-shadow(3px 3px 0px rgba(0,0,0,1));
+            margin: 0 10px;
+        }
+
+        .countdown-number { 
+            font-size: 110px !important; /* Número gigante como en la foto */
+            color: #ffffff !important;
+            -webkit-text-stroke: 4px black !important;
+            text-shadow: 5px 5px 0px #000, 0px 8px 15px rgba(0,0,0,0.6) !important;
+            line-height: 0.8;
+            margin-top: 5px;
+            z-index: 2;
+        }
+
+        /* Efecto de tembladera cuando llega de 5 a 0 */
+        .countdown-number.timer-critical {
+            animation: tenseTremble 0.12s infinite !important;
+            color: #ff3333 !important; /* Se vuelve rojizo para mayor tensión */
+        }
 
         #winner-zone {
             display: none;
@@ -111,10 +153,15 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
         }
 
-        @keyframes flashRed { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5); } }
         @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes emerge { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes heartbeat { 0%, 30%, 100% { transform: scale(1); } 15% { transform: scale(1.15); } }
+        @keyframes tenseTremble {
+            0%   { transform: translate(0, 0) scale(1.12) rotate(0deg); }
+            25%  { transform: translate(-3px, 2px) scale(1.14) rotate(-1.5deg); }
+            50%  { transform: translate(3px, -2px) scale(1.12) rotate(1.5deg); }
+            75%  { transform: translate(-2px, -2px) scale(1.14) rotate(-1deg); }
+            100% { transform: translate(2px, 2px) scale(1.12) rotate(1deg); }
+        }
 
         #canvas-effects { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
     </style>
@@ -157,9 +204,9 @@
         </div>
 
         <div class="countdown-zone" id="countdown-display">
-            <div class="countdown-line1" id="countdown-line1-text">XX PARA SALVARNOS</div>
-            <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
-            <div class="countdown-number" id="timer">30</div>
+            <div class="countdown-line1" id="countdown-line1-text"></div>
+            <!-- Eliminada la línea 2 de 'REINICIANDO EN' -->
+            <div class="countdown-number" id="timer">12</div>
             
             <div id="winner-zone">
                 <img id="winner-avatar" src="https://via.placeholder.com/150/222/fff?text=?">
@@ -173,6 +220,33 @@
     <script>
         const socket = io();
         
+        const DEFAULT_GG_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90">
+                <defs>
+                    <linearGradient id="ggGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ffea00"/>
+                        <stop offset="45%" stop-color="#ff4fd8"/>
+                        <stop offset="100%" stop-color="#00e5ff"/>
+                    </linearGradient>
+                </defs>
+                <g font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="62" stroke="#1b0033" stroke-width="8" paint-order="stroke fill" fill="url(#ggGrad)">
+                    <text x="6" y="68">G</text>
+                    <text x="56" y="68">G</text>
+                </g>
+            </svg>
+        `);
+
+        const DEFAULT_ROSE_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                <path d="M48 55 L58 92" stroke="#1b8a3d" stroke-width="8" stroke-linecap="round"/>
+                <path d="M53 72 Q75 62 78 74 Q65 82 53 72 Z" fill="#2ecc71" stroke="#0f5223" stroke-width="3"/>
+                <path d="M50 75 Q28 70 25 82 Q38 88 50 75 Z" fill="#27ae60" stroke="#0f5223" stroke-width="3"/>
+                <path d="M22 38 C18 16, 48 8, 52 22 C60 8, 84 18, 78 40 C74 58, 56 66, 48 64 C36 66, 25 55, 22 38 Z" fill="#ff1e56" stroke="#4a0012" stroke-width="4"/>
+                <path d="M30 34 C34 20, 64 20, 68 36 C64 48, 36 48, 30 34 Z" fill="#ff5e8e" stroke="#4a0012" stroke-width="3"/>
+                <path d="M40 33 C45 26, 56 26, 58 34 C54 41, 43 40, 40 33 Z" fill="#ff9ebb"/>
+            </svg>
+        `);
+
         let currentConfig = null;
         let timer = 30;
         let countdownInterval = null;
@@ -183,7 +257,98 @@
         let latestData = null; 
         let winRegistered = false; 
 
-        function playAlertSound() {
+        function obtenerIconoEquipo(numEquipo) {
+            let fallback = numEquipo === 1 ? DEFAULT_GG_ICON : DEFAULT_ROSE_ICON;
+            if (!currentConfig) return fallback;
+
+            let equipo = numEquipo === 1 ? currentConfig.equipo1 : currentConfig.equipo2;
+            let catalogo = currentConfig.regalosDisponibles || [];
+
+            if (equipo && Array.isArray(equipo.regalos) && equipo.regalos.length > 0) {
+                let preferido = equipo.regalos.find(r => Number(r.diamonds) === 1) || equipo.regalos[0];
+                if (preferido) {
+                    if (preferido.image && !preferido.image.includes('via.placeholder.com') && preferido.image.trim() !== '') {
+                        return preferido.image;
+                    }
+                    let enCat = catalogo.find(c => Number(c.id) === Number(preferido.id));
+                    if (enCat && enCat.image && !enCat.image.includes('via.placeholder.com') && enCat.image.trim() !== '') {
+                        return enCat.image;
+                    }
+                }
+                for (let r of equipo.regalos) {
+                    if (r.image && !r.image.includes('via.placeholder.com') && r.image.trim() !== '') return r.image;
+                    let enCat = catalogo.find(c => Number(c.id) === Number(r.id));
+                    if (enCat && enCat.image && !enCat.image.includes('via.placeholder.com') && enCat.image.trim() !== '') return enCat.image;
+                }
+            }
+            return fallback;
+        }
+
+        function renderizarLinea1(cantidad, numEquipo, textoAccion, colorTexto) {
+            const l1 = document.getElementById('countdown-line1-text');
+            const iconoUrl = obtenerIconoEquipo(numEquipo);
+            const fallbackUrl = numEquipo === 1 ? DEFAULT_GG_ICON : DEFAULT_ROSE_ICON;
+
+            // Se han eliminado las inyecciones de CSS dinámicas que alteraban el diseño visual para mantener siempre el diseño idéntico al de las fotos
+            l1.innerHTML = `
+                <span class="line1-num">${cantidad}</span>
+                <img class="line1-icon" src="${iconoUrl}" alt="" onerror="this.onerror=null;this.src='${fallbackUrl}';">
+                <span class="line1-text" style="color: ${colorTexto};">= ${textoAccion}</span>
+            `;
+        }
+
+        function detenerCuentaRegresiva() {
+            if (countdownInterval) {
+                clearTimeout(countdownInterval);
+                countdownInterval = null;
+            }
+            const timerEl = document.getElementById('timer');
+            if (timerEl) timerEl.classList.remove('timer-critical');
+        }
+
+        function actualizarEstadoVisualTimer(valor) {
+            const timerEl = document.getElementById('timer');
+            if (!timerEl) return;
+            if (valor <= 5 && valor > 0) {
+                timerEl.classList.add('timer-critical');
+            } else {
+                timerEl.classList.remove('timer-critical');
+            }
+        }
+
+        function programarSiguienteSegundo() {
+            if (isGameOver) return;
+
+            let delay = 1000;
+            if (timer <= 5 && timer > 0) {
+                delay = 1350 + ((6 - timer) * 110); 
+            }
+
+            countdownInterval = setTimeout(() => {
+                countdownInterval = null;
+                if (isGameOver) return;
+
+                timer--;
+                playAlertSound(timer <= 5);
+
+                if (timer <= 0) {
+                    timer = 0;
+                    const timerEl = document.getElementById('timer');
+                    if (timerEl) timerEl.classList.remove('timer-critical');
+                    triggerGameOver(latestData ? latestData.topReiniciar : null);
+                    return;
+                }
+
+                if (!isGameOver) {
+                    const timerEl = document.getElementById('timer');
+                    timerEl.innerText = timer;
+                    actualizarEstadoVisualTimer(timer);
+                    programarSiguienteSegundo();
+                }
+            }, delay);
+        }
+
+        function playAlertSound(esCritico = false) {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -191,11 +356,11 @@
                 const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.type = "sine";
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.2); 
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime); 
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.2);
+                osc.frequency.setValueAtTime(esCritico ? 950 : 800, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + (esCritico ? 0.28 : 0.2)); 
+                gain.gain.setValueAtTime(esCritico ? 0.12 : 0.08, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (esCritico ? 0.28 : 0.2));
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + (esCritico ? 0.28 : 0.2));
             } catch(e) {} 
         }
 
@@ -218,20 +383,11 @@
         function applyDesign(style, eqColors) {
             if (!style || !eqColors) return;
             
+            // Forzamos que la fuente base aplique pero respetando nuestra Lilita One en el temporizador
             document.body.style.fontFamily = style.fontFamily;
             
-            const strokedElements = document.querySelectorAll('.text-eq1, .text-eq2, .status-zone, .countdown-line1, .countdown-line2, .score');
+            const strokedElements = document.querySelectorAll('.text-eq1, .text-eq2, .status-zone, .score');
             strokedElements.forEach(el => el.style.webkitTextStroke = style.textStroke + "px black");
-            document.getElementById('timer').style.webkitTextStroke = (style.textStroke * 2.5) + "px black";
-
-            const l1 = document.getElementById('countdown-line1-text');
-            l1.style.color = style.colorL1; l1.style.fontSize = style.sizeL1 + "px";
-
-            const l2 = document.getElementById('countdown-line2-text');
-            l2.style.color = style.colorL2; l2.style.fontSize = style.sizeL2 + "px";
-
-            const lt = document.getElementById('timer');
-            lt.style.color = style.colorTimer; lt.style.fontSize = style.sizeTimer + "px";
 
             const c1 = eqColors.c1 || '#00ff66';
             const c2 = eqColors.c2 || '#ff003c';
@@ -253,9 +409,7 @@
                 {el: document.querySelector('.text-eq1'), extra: `0 0 15px ${c1}`},
                 {el: document.querySelector('.text-eq2'), extra: `0 0 15px ${c2}`},
                 {el: document.querySelector('.score#score1'), extra: `-1px -1px 0px ${shadowColor}, 1px -1px 0px ${shadowColor}, -1px 1px 0px ${shadowColor}`},
-                {el: document.querySelector('.score#score2'), extra: `-1px -1px 0px ${shadowColor}, 1px -1px 0px ${shadowColor}, -1px 1px 0px ${shadowColor}`},
-                {el: l1}, {el: l2},
-                {el: lt, extra: `0 0 40px #ff003c`}
+                {el: document.querySelector('.score#score2'), extra: `-1px -1px 0px ${shadowColor}, 1px -1px 0px ${shadowColor}, -1px 1px 0px ${shadowColor}`}
             ];
 
             elementsWithShadow.forEach(item => {
@@ -264,6 +418,8 @@
                 if(item.extra) textShadowStr += `, ${item.extra}`;
                 item.el.style.textShadow = textShadowStr;
             });
+
+            if (latestData) procesarActualizacionVisual(latestData);
         }
 
         socket.on('config_actual', (config) => {
@@ -288,13 +444,8 @@
 
         function triggerGameOver(topReiniciar) {
             isGameOver = true;
-            
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
+            detenerCuentaRegresiva();
 
-            // 🌟 LÓGICA MANUAL: Si los puntos se añadieron manual sin donador, resetea sin mostrar pantalla
             if (!topReiniciar || topReiniciar.name === 'ESPERANDO' || topReiniciar.name === 'LA COMUNIDAD') {
                 socket.emit('reset');
                 setTimeout(() => {
@@ -313,7 +464,6 @@
             }
             
             document.getElementById('countdown-line1-text').style.display = 'none';
-            document.getElementById('countdown-line2-text').style.display = 'none';
             document.getElementById('timer').style.display = 'none';
             
             let c2 = currentConfig.equipo2.color || "#ff003c";
@@ -345,7 +495,6 @@
 
             socket.emit('reset');
 
-            // 🌟 DURACIÓN: 2.5 Segundos
             setTimeout(() => {
                 isGameOver = false;
                 document.getElementById('winner-zone').style.display = 'none';
@@ -358,11 +507,7 @@
 
         function triggerSaved(topSalvar) {
             isGameOver = true; 
-            
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
+            detenerCuentaRegresiva();
 
             if (!winRegistered) {
                 socket.emit('registrar_victoria_versus', { tipo: 'salvada', user: topSalvar });
@@ -370,7 +515,6 @@
             }
             
             document.getElementById('countdown-line1-text').style.display = 'none';
-            document.getElementById('countdown-line2-text').style.display = 'none';
             document.getElementById('timer').style.display = 'none';
             
             let c1 = currentConfig.equipo1.color || "#00ff66";
@@ -400,9 +544,6 @@
 
             document.getElementById('winner-zone').style.display = 'flex';
 
-            // 🌟 SE ELIMINÓ EL RESET PARA QUE LOS PUNTOS (INCLUYENDO MANUALES) SE MANTENGAN VIVOS
-
-            // 🌟 DURACIÓN: 3.5 Segundos
             setTimeout(() => {
                 isGameOver = false;
                 document.getElementById('winner-zone').style.display = 'none';
@@ -430,14 +571,13 @@
                 winRegistered = false; 
                 document.getElementById('winner-zone').style.display = 'none';
                 document.getElementById('countdown-display').style.display = 'none';
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+                detenerCuentaRegresiva();
             }
 
             let isLosing = data.totalReiniciar > data.totalSalvar;
             
             if (wasLosing && !isLosing && data.totalSalvar > 0) {
                 wasLosing = false; 
-                // 🌟 LÓGICA MANUAL: Solo lanza la alerta visual "¡TE SALVÓ!" si hay un donador de verdad. Si fue manual (ESPERANDO), salta la alerta y solo sube los puntos.
                 if (latestData.topSalvar && latestData.topSalvar.name !== 'ESPERANDO') {
                     triggerSaved(latestData.topSalvar);
                     return; 
@@ -449,7 +589,7 @@
                 document.getElementById('avatar1').src = data.topSalvar.avatar;
                 document.getElementById('avatar1').style.display = 'block';
                 document.getElementById('name1').innerText = data.topSalvar.name;
-                document.getElementById('donatorCoins1').innerHTML = `<i class=\"fa-solid fa-coins\"></i> ${data.topSalvar.coins}`;
+                document.getElementById('donatorCoins1').innerHTML = `<i class="fa-solid fa-coins"></i> ${data.topSalvar.coins}`;
             } else {
                 document.getElementById('avatar1').style.display = 'none';
                 document.getElementById('name1').innerText = 'Nadie aún';
@@ -461,7 +601,7 @@
                 document.getElementById('avatar2').src = data.topReiniciar.avatar;
                 document.getElementById('avatar2').style.display = 'block';
                 document.getElementById('name2').innerText = data.topReiniciar.name;
-                document.getElementById('donatorCoins2').innerHTML = `<i class=\"fa-solid fa-coins\"></i> ${data.topReiniciar.coins}`;
+                document.getElementById('donatorCoins2').innerHTML = `<i class="fa-solid fa-coins"></i> ${data.topReiniciar.coins}`;
             } else {
                 document.getElementById('avatar2').style.display = 'none';
                 document.getElementById('name2').innerText = 'Nadie aún';
@@ -522,49 +662,39 @@
 
             let countdownDisplay = document.getElementById('countdown-display');
             let line1 = document.getElementById('countdown-line1-text');
-            let line2 = document.getElementById('countdown-line2-text');
             let timerEl = document.getElementById('timer');
             
             if (currentConfig.enableCountdown && data.totalReiniciar > data.totalSalvar) {
                 let diff = data.totalReiniciar - data.totalSalvar;
-                line1.innerText = `${diff} PARA SALVARNOS`;
-                line1.style.color = currentConfig.battleStyle.colorL1; 
+                let colorL1 = currentConfig.battleStyle?.colorL1;
+                let colorSalvar = (!colorL1 || colorL1.toLowerCase() === '#ffd700' || colorL1.toLowerCase() === '#ffea00') ? '#ff6b6b' : colorL1;
+
+                renderizarLinea1(diff, 1, 'SALVAR', colorSalvar);
                 
-                line1.style.display = 'block';
-                line2.style.display = 'block';
+                line1.style.display = 'flex';
                 timerEl.style.display = 'block';
                 
                 countdownDisplay.style.display = 'flex'; 
                 if (!countdownInterval) {
                     timer = currentConfig.countdownSeconds || 30; 
                     timerEl.innerText = timer;
-                    
-                    countdownInterval = setInterval(() => {
-                        timer--;
-                        playAlertSound(); 
-                        
-                        if (timer <= 0) { 
-                            timer = 0; 
-                            triggerGameOver(latestData.topReiniciar); 
-                        }
-                        if (!isGameOver) timerEl.innerText = timer;
-                    }, 1000);
+                    actualizarEstadoVisualTimer(timer);
+                    programarSiguienteSegundo();
                 }
-            } else if (data.totalSalvar > data.totalReiniciar) {
+            } else if (total > 0 && data.totalSalvar >= data.totalReiniciar) {
                 let diff = (data.totalSalvar - data.totalReiniciar) + 1;
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+                detenerCuentaRegresiva();
                 
-                line1.innerText = `${diff} PARA REINICIAR`;
-                line1.style.color = currentConfig.equipo2.color || '#ff003c'; 
+                // Ahora renderiza RESET en lugar de REINICIAR (Igual que la foto 2)
+                renderizarLinea1(diff, 2, 'RESET', '#ffffff');
                 
-                line1.style.display = 'block';
-                line2.style.display = 'none'; 
+                line1.style.display = 'flex';
                 timerEl.style.display = 'none';
                 
                 countdownDisplay.style.display = 'flex';
             } else {
                 countdownDisplay.style.display = 'none';
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+                detenerCuentaRegresiva();
             }
         }
 
