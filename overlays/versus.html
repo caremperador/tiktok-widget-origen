@@ -72,10 +72,10 @@
         .donator-coins i { margin-right: 4px; color: #ffcc00; } 
         .avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; display: none; }
 
-        /* ESTILO EXACTO DE LAS FOTOS CON LUCKIEST GUY */
+        /* ESTILO COMPACTO Y CORTO CON LUCKIEST GUY */
         .countdown-zone {
             position: absolute;
-            top: 58%; 
+            top: 57%; 
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
@@ -91,8 +91,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 62px;
-            letter-spacing: 1.5px;
+            font-size: 46px;
+            letter-spacing: 1px;
             margin-bottom: 0px;
             z-index: 2;
             line-height: 1;
@@ -100,38 +100,39 @@
 
         .line1-num {
             color: #ffe600 !important;
-            -webkit-text-stroke: 8px #000000 !important;
-            text-shadow: 0px 5px 0px #000000, 0px 8px 12px rgba(0,0,0,0.55) !important;
+            -webkit-text-stroke: 6.5px #000000 !important;
+            text-shadow: 0px 4px 0px #000000, 0px 6px 10px rgba(0,0,0,0.5) !important;
             display: inline-block;
-            transform: translateY(3px);
+            transform: translateY(2px) scaleY(0.92);
         }
 
         .line1-text {
-            -webkit-text-stroke: 8px #000000 !important;
-            text-shadow: 0px 5px 0px #000000, 0px 8px 12px rgba(0,0,0,0.55) !important;
+            -webkit-text-stroke: 6.5px #000000 !important;
+            text-shadow: 0px 4px 0px #000000, 0px 6px 10px rgba(0,0,0,0.5) !important;
             display: inline-block;
-            transform: translateY(3px);
+            transform: translateY(2px) scaleY(0.92);
         }
 
         .line1-icon {
-            height: 1.18em;
-            width: 1.18em;
+            height: 1.22em;
+            width: 1.22em;
             object-fit: contain;
-            filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.65));
-            margin: 0 12px;
+            filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.65));
+            margin: 0 9px;
             transform: rotate(-10deg);
         }
 
         .countdown-number { 
             font-family: 'Luckiest Guy', cursive !important;
-            font-size: 118px !important;
+            font-size: 92px !important;
             color: #ffffff !important;
-            -webkit-text-stroke: 11px #0d001a !important;
-            text-shadow: 0px 7px 0px #0d001a, 0px 10px 18px rgba(0,0,0,0.65) !important;
-            line-height: 0.88;
-            margin-top: 6px;
+            -webkit-text-stroke: 9px #0d001a !important;
+            text-shadow: 0px 5px 0px #0d001a, 0px 8px 14px rgba(0,0,0,0.65) !important;
+            line-height: 0.86;
+            margin-top: 4px;
             z-index: 2;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
+            transform: scaleY(0.92);
         }
 
         /* Efecto de tembladera cuando llega de 5 a 0 */
@@ -154,12 +155,12 @@
         }
         
         #winner-title {
-            font-size: 55px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-align: center;
+            font-size: 48px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-align: center;
             -webkit-text-stroke: 2.5px black; line-height: 1.1; margin-bottom: 2px;
         }
         
         #winner-name {
-            font-size: 26px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; text-align: center;
+            font-size: 24px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; text-align: center;
             color: #ffffff; 
             -webkit-text-stroke: 1.5px black;
             max-width: 350px; 
@@ -169,11 +170,11 @@
         @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes emerge { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes tenseTremble {
-            0%   { transform: translate(0, 0) scale(1.08) rotate(0deg); }
-            25%  { transform: translate(-3px, 2px) scale(1.10) rotate(-1.5deg); }
-            50%  { transform: translate(3px, -2px) scale(1.08) rotate(1.5deg); }
-            75%  { transform: translate(-2px, -2px) scale(1.10) rotate(-1deg); }
-            100% { transform: translate(2px, 2px) scale(1.08) rotate(1deg); }
+            0%   { transform: translate(0, 0) scale(1.06, 0.98) rotate(0deg); }
+            25%  { transform: translate(-3px, 2px) scale(1.08, 1.0) rotate(-1.5deg); }
+            50%  { transform: translate(3px, -2px) scale(1.06, 0.98) rotate(1.5deg); }
+            75%  { transform: translate(-2px, -2px) scale(1.08, 1.0) rotate(-1deg); }
+            100% { transform: translate(2px, 2px) scale(1.06, 0.98) rotate(1deg); }
         }
 
         #canvas-effects { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
@@ -232,7 +233,6 @@
     <script>
         const socket = io();
         
-        // Iconos SVG idénticos a las capturas de referencia
         const DEFAULT_GG_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 95">
                 <defs>
@@ -308,8 +308,11 @@
             const iconoUrl = obtenerIconoEquipo(numEquipo);
             const fallbackUrl = numEquipo === 1 ? DEFAULT_GG_ICON : DEFAULT_ROSE_ICON;
 
+            // Si la cantidad es 1, no ponemos el número (el icono ya representa 1 unidad)
+            const numeroHtml = cantidad > 1 ? `<span class="line1-num">${cantidad}</span>` : '';
+
             l1.innerHTML = `
-                <span class="line1-num">${cantidad}</span>
+                ${numeroHtml}
                 <img class="line1-icon" src="${iconoUrl}" alt="" onerror="this.onerror=null;this.src='${fallbackUrl}';">
                 <span class="line1-text" style="color: ${colorTexto};">= ${textoAccion}</span>
             `;
@@ -439,7 +442,7 @@
             if (latestData) procesarActualizacionVisual(latestData);
         }
 
-        // Muestra por defecto "1 [Rosa] = RESET" apenas abre el overlay
+        // Muestra por defecto "[Rosa] = RESET" sin el número 1
         renderizarLinea1(1, 2, 'RESET', '#ffffff');
 
         socket.on('config_actual', (config) => {
@@ -683,7 +686,7 @@
             let line1 = document.getElementById('countdown-line1-text');
             let timerEl = document.getElementById('timer');
             
-            // CASO 1: Va ganando Reiniciar (Enviaron Rosas) -> Muestra "X [GG] = SALVAR" + Cuenta Regresiva
+            // CASO 1: Ganando Reiniciar -> Muestra "[GG] = SALVAR" (o "2 [GG] = SALVAR") + Cuenta Regresiva
             if (data.totalReiniciar > data.totalSalvar) {
                 let diff = data.totalReiniciar - data.totalSalvar;
                 let colorL1 = currentConfig.battleStyle?.colorL1;
@@ -705,7 +708,7 @@
                     timerEl.style.display = 'none';
                 }
             } 
-            // CASO 2: Por defecto (0 - 0), empate o ganando Salvar -> Muestra "X [Rosa] = RESET"
+            // CASO 2: Por defecto (0 - 0), empate o ganando Salvar -> Muestra "[Rosa] = RESET" (o "X [Rosa] = RESET")
             else {
                 let diff = (data.totalSalvar - data.totalReiniciar) + 1;
                 detenerCuentaRegresiva();
