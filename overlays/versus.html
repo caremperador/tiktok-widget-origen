@@ -16,6 +16,7 @@
 
         .text-con-stroke, .status-zone, .countdown-line1, .countdown-number, .text-eq1, .text-eq2, .score, #winner-title, #winner-name, .line1-num, .line1-text {
             paint-order: stroke fill; 
+            -webkit-font-smoothing: antialiased;
         }
 
         .status-zone {
@@ -71,60 +72,72 @@
         .donator-coins i { margin-right: 4px; color: #ffcc00; } 
         .avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; display: none; }
 
-        /* NUEVOS ESTILOS EXACTOS PARA LA ZONA DE COUNTDOWN Y LAS IMÁGENES */
+        /* ESTILO EXACTO DE LAS FOTOS CON LUCKIEST GUY */
         .countdown-zone {
             position: absolute;
             top: 58%; 
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
-            display: none; 
-            flex-direction: column; align-items: center; justify-content: center; animation: emerge 0.5s ease-out;
-            font-family: 'Lilita One', sans-serif; /* Estilo de letra de la foto */
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: emerge 0.5s ease-out;
+            font-family: 'Luckiest Guy', cursive !important;
         }
         
         .countdown-line1 {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 55px; /* Tamaño grande para "2 GG = SALVAR" */
-            letter-spacing: 2px;
-            margin-bottom: 2px;
+            font-size: 62px;
+            letter-spacing: 1.5px;
+            margin-bottom: 0px;
             z-index: 2;
-            text-shadow: 4px 4px 0px #000, 0px 5px 10px rgba(0,0,0,0.6); /* Sombra 3D exacta */
+            line-height: 1;
         }
 
         .line1-num {
-            color: #ffea00 !important; /* Amarillo característico */
-            -webkit-text-stroke: 3px black !important;
+            color: #ffe600 !important;
+            -webkit-text-stroke: 8px #000000 !important;
+            text-shadow: 0px 5px 0px #000000, 0px 8px 12px rgba(0,0,0,0.55) !important;
+            display: inline-block;
+            transform: translateY(3px);
         }
 
         .line1-text {
-            -webkit-text-stroke: 3px black !important;
+            -webkit-text-stroke: 8px #000000 !important;
+            text-shadow: 0px 5px 0px #000000, 0px 8px 12px rgba(0,0,0,0.55) !important;
+            display: inline-block;
+            transform: translateY(3px);
         }
 
         .line1-icon {
-            height: 1.1em;
-            width: 1.1em;
+            height: 1.18em;
+            width: 1.18em;
             object-fit: contain;
-            filter: drop-shadow(3px 3px 0px rgba(0,0,0,1));
-            margin: 0 10px;
+            filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.65));
+            margin: 0 12px;
+            transform: rotate(-10deg);
         }
 
         .countdown-number { 
-            font-size: 110px !important; /* Número gigante como en la foto */
+            font-family: 'Luckiest Guy', cursive !important;
+            font-size: 118px !important;
             color: #ffffff !important;
-            -webkit-text-stroke: 4px black !important;
-            text-shadow: 5px 5px 0px #000, 0px 8px 15px rgba(0,0,0,0.6) !important;
-            line-height: 0.8;
-            margin-top: 5px;
+            -webkit-text-stroke: 11px #0d001a !important;
+            text-shadow: 0px 7px 0px #0d001a, 0px 10px 18px rgba(0,0,0,0.65) !important;
+            line-height: 0.88;
+            margin-top: 6px;
             z-index: 2;
+            letter-spacing: 2px;
         }
 
         /* Efecto de tembladera cuando llega de 5 a 0 */
         .countdown-number.timer-critical {
             animation: tenseTremble 0.12s infinite !important;
-            color: #ff3333 !important; /* Se vuelve rojizo para mayor tensión */
+            color: #ff4d4d !important;
         }
 
         #winner-zone {
@@ -156,11 +169,11 @@
         @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes emerge { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes tenseTremble {
-            0%   { transform: translate(0, 0) scale(1.12) rotate(0deg); }
-            25%  { transform: translate(-3px, 2px) scale(1.14) rotate(-1.5deg); }
-            50%  { transform: translate(3px, -2px) scale(1.12) rotate(1.5deg); }
-            75%  { transform: translate(-2px, -2px) scale(1.14) rotate(-1deg); }
-            100% { transform: translate(2px, 2px) scale(1.12) rotate(1deg); }
+            0%   { transform: translate(0, 0) scale(1.08) rotate(0deg); }
+            25%  { transform: translate(-3px, 2px) scale(1.10) rotate(-1.5deg); }
+            50%  { transform: translate(3px, -2px) scale(1.08) rotate(1.5deg); }
+            75%  { transform: translate(-2px, -2px) scale(1.10) rotate(-1deg); }
+            100% { transform: translate(2px, 2px) scale(1.08) rotate(1deg); }
         }
 
         #canvas-effects { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
@@ -205,8 +218,7 @@
 
         <div class="countdown-zone" id="countdown-display">
             <div class="countdown-line1" id="countdown-line1-text"></div>
-            <!-- Eliminada la línea 2 de 'REINICIANDO EN' -->
-            <div class="countdown-number" id="timer">12</div>
+            <div class="countdown-number" id="timer" style="display: none;">30</div>
             
             <div id="winner-zone">
                 <img id="winner-avatar" src="https://via.placeholder.com/150/222/fff?text=?">
@@ -220,30 +232,37 @@
     <script>
         const socket = io();
         
+        // Iconos SVG idénticos a las capturas de referencia
         const DEFAULT_GG_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 95">
                 <defs>
-                    <linearGradient id="ggGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ffea00"/>
-                        <stop offset="45%" stop-color="#ff4fd8"/>
-                        <stop offset="100%" stop-color="#00e5ff"/>
+                    <linearGradient id="ggFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#ffe600"/>
+                        <stop offset="42%" stop-color="#ffffff"/>
+                        <stop offset="55%" stop-color="#ff5ec4"/>
+                        <stop offset="100%" stop-color="#ff006a"/>
+                    </linearGradient>
+                    <linearGradient id="ggStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#00e1ff"/>
+                        <stop offset="50%" stop-color="#7a00ff"/>
+                        <stop offset="100%" stop-color="#ff006a"/>
                     </linearGradient>
                 </defs>
-                <g font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="62" stroke="#1b0033" stroke-width="8" paint-order="stroke fill" fill="url(#ggGrad)">
-                    <text x="6" y="68">G</text>
-                    <text x="56" y="68">G</text>
+                <g font-family="'Luckiest Guy', 'Arial Black', Impact, sans-serif" font-weight="900" font-size="68" paint-order="stroke fill">
+                    <text x="6" y="74" stroke="url(#ggStroke)" stroke-width="14" stroke-linejoin="round" fill="none">GG</text>
+                    <text x="6" y="74" stroke="#1a0033" stroke-width="6" stroke-linejoin="round" fill="url(#ggFill)">GG</text>
                 </g>
             </svg>
         `);
 
         const DEFAULT_ROSE_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                <path d="M48 55 L58 92" stroke="#1b8a3d" stroke-width="8" stroke-linecap="round"/>
-                <path d="M53 72 Q75 62 78 74 Q65 82 53 72 Z" fill="#2ecc71" stroke="#0f5223" stroke-width="3"/>
-                <path d="M50 75 Q28 70 25 82 Q38 88 50 75 Z" fill="#27ae60" stroke="#0f5223" stroke-width="3"/>
-                <path d="M22 38 C18 16, 48 8, 52 22 C60 8, 84 18, 78 40 C74 58, 56 66, 48 64 C36 66, 25 55, 22 38 Z" fill="#ff1e56" stroke="#4a0012" stroke-width="4"/>
-                <path d="M30 34 C34 20, 64 20, 68 36 C64 48, 36 48, 30 34 Z" fill="#ff5e8e" stroke="#4a0012" stroke-width="3"/>
-                <path d="M40 33 C45 26, 56 26, 58 34 C54 41, 43 40, 40 33 Z" fill="#ff9ebb"/>
+                <path d="M50 58 L62 94" stroke="#1e9e46" stroke-width="8" stroke-linecap="round"/>
+                <path d="M55 72 Q78 60 82 74 Q68 84 55 72 Z" fill="#2ecc71" stroke="#11662b" stroke-width="3"/>
+                <path d="M52 76 Q26 70 22 83 Q38 90 52 76 Z" fill="#27ae60" stroke="#11662b" stroke-width="3"/>
+                <path d="M20 40 C14 16, 48 6, 52 20 C60 6, 86 16, 80 42 C75 62, 56 70, 48 68 C34 70, 24 58, 20 40 Z" fill="#ff1e56" stroke="#7a001e" stroke-width="3.5"/>
+                <path d="M28 36 C32 20, 66 20, 70 38 C66 52, 34 52, 28 36 Z" fill="#ff5c8a" stroke="#a30029" stroke-width="2.5"/>
+                <path d="M38 34 C44 26, 58 26, 60 35 C56 43, 42 42, 38 34 Z" fill="#ff9ebb" stroke="#d11d53" stroke-width="2"/>
             </svg>
         `);
 
@@ -254,7 +273,7 @@
         
         let isGameOver = false; 
         let wasLosing = false;
-        let latestData = null; 
+        let latestData = { totalSalvar: 0, totalReiniciar: 0, topSalvar: { name: 'ESPERANDO', coins: 0, avatar: '' }, topReiniciar: { name: 'ESPERANDO', coins: 0, avatar: '' } }; 
         let winRegistered = false; 
 
         function obtenerIconoEquipo(numEquipo) {
@@ -289,7 +308,6 @@
             const iconoUrl = obtenerIconoEquipo(numEquipo);
             const fallbackUrl = numEquipo === 1 ? DEFAULT_GG_ICON : DEFAULT_ROSE_ICON;
 
-            // Se han eliminado las inyecciones de CSS dinámicas que alteraban el diseño visual para mantener siempre el diseño idéntico al de las fotos
             l1.innerHTML = `
                 <span class="line1-num">${cantidad}</span>
                 <img class="line1-icon" src="${iconoUrl}" alt="" onerror="this.onerror=null;this.src='${fallbackUrl}';">
@@ -383,7 +401,6 @@
         function applyDesign(style, eqColors) {
             if (!style || !eqColors) return;
             
-            // Forzamos que la fuente base aplique pero respetando nuestra Lilita One en el temporizador
             document.body.style.fontFamily = style.fontFamily;
             
             const strokedElements = document.querySelectorAll('.text-eq1, .text-eq2, .status-zone, .score');
@@ -421,6 +438,9 @@
 
             if (latestData) procesarActualizacionVisual(latestData);
         }
+
+        // Muestra por defecto "1 [Rosa] = RESET" apenas abre el overlay
+        renderizarLinea1(1, 2, 'RESET', '#ffffff');
 
         socket.on('config_actual', (config) => {
             currentConfig = config;
@@ -570,7 +590,6 @@
                 wasLosing = false; 
                 winRegistered = false; 
                 document.getElementById('winner-zone').style.display = 'none';
-                document.getElementById('countdown-display').style.display = 'none';
                 detenerCuentaRegresiva();
             }
 
@@ -664,37 +683,38 @@
             let line1 = document.getElementById('countdown-line1-text');
             let timerEl = document.getElementById('timer');
             
-            if (currentConfig.enableCountdown && data.totalReiniciar > data.totalSalvar) {
+            // CASO 1: Va ganando Reiniciar (Enviaron Rosas) -> Muestra "X [GG] = SALVAR" + Cuenta Regresiva
+            if (data.totalReiniciar > data.totalSalvar) {
                 let diff = data.totalReiniciar - data.totalSalvar;
                 let colorL1 = currentConfig.battleStyle?.colorL1;
-                let colorSalvar = (!colorL1 || colorL1.toLowerCase() === '#ffd700' || colorL1.toLowerCase() === '#ffea00') ? '#ff6b6b' : colorL1;
+                let colorSalvar = (!colorL1 || colorL1.toLowerCase() === '#ffd700' || colorL1.toLowerCase() === '#ffea00') ? '#ff5e5e' : colorL1;
 
                 renderizarLinea1(diff, 1, 'SALVAR', colorSalvar);
-                
                 line1.style.display = 'flex';
-                timerEl.style.display = 'block';
-                
                 countdownDisplay.style.display = 'flex'; 
-                if (!countdownInterval) {
-                    timer = currentConfig.countdownSeconds || 30; 
-                    timerEl.innerText = timer;
-                    actualizarEstadoVisualTimer(timer);
-                    programarSiguienteSegundo();
+
+                if (currentConfig.enableCountdown !== false) {
+                    timerEl.style.display = 'block';
+                    if (!countdownInterval) {
+                        timer = currentConfig.countdownSeconds || 30; 
+                        timerEl.innerText = timer;
+                        actualizarEstadoVisualTimer(timer);
+                        programarSiguienteSegundo();
+                    }
+                } else {
+                    timerEl.style.display = 'none';
                 }
-            } else if (total > 0 && data.totalSalvar >= data.totalReiniciar) {
+            } 
+            // CASO 2: Por defecto (0 - 0), empate o ganando Salvar -> Muestra "X [Rosa] = RESET"
+            else {
                 let diff = (data.totalSalvar - data.totalReiniciar) + 1;
                 detenerCuentaRegresiva();
                 
-                // Ahora renderiza RESET en lugar de REINICIAR (Igual que la foto 2)
                 renderizarLinea1(diff, 2, 'RESET', '#ffffff');
                 
                 line1.style.display = 'flex';
                 timerEl.style.display = 'none';
-                
                 countdownDisplay.style.display = 'flex';
-            } else {
-                countdownDisplay.style.display = 'none';
-                detenerCuentaRegresiva();
             }
         }
 
