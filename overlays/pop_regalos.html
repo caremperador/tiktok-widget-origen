@@ -47,22 +47,24 @@
         const socket = io();
         let audioCtx = null;
 
-        // Variables para guardar los nombres y colores desde el servidor
-        let nombreEq1 = "GG";
-        let nombreEq2 = "ROSITAS";
+        // Variables por defecto iniciales
+        let nombreEq1 = "SALVAR";
+        let nombreEq2 = "RESET";
         let colorEq1 = "#00ff66";
         let colorEq2 = "#ff003c";
 
-        // Escuchamos la configuración en tiempo real
+        // Escuchamos la configuración en tiempo real del servidor
         socket.on('config_actual', (config) => {
-            if(config) {
-                // Usamos el subtexto si existe, si no, el nombre principal
-                nombreEq1 = config.equipo1.sub.trim() ? config.equipo1.sub.trim() : config.equipo1.nombre;
-                nombreEq2 = config.equipo2.sub.trim() ? config.equipo2.sub.trim() : config.equipo2.nombre;
-                
-                // Extraemos los colores elegidos en el panel
-                colorEq1 = config.equipo1.color || "#00ff66";
-                colorEq2 = config.equipo2.color || "#ff003c";
+            if (config) {
+                // Sincronización robusta: Lee el subtexto, la acción de unidades o el nombre principal en orden de prioridad
+                if (config.equipo1) {
+                    nombreEq1 = config.equipo1.sub || config.equipo1.actionText || config.equipo1.nombre || "SALVAR";
+                    colorEq1 = config.equipo1.color || "#00ff66";
+                }
+                if (config.equipo2) {
+                    nombreEq2 = config.equipo2.sub || config.equipo2.actionText || config.equipo2.nombre || "RESET";
+                    colorEq2 = config.equipo2.color || "#ff003c";
+                }
             }
         });
 
@@ -80,7 +82,6 @@
                 
                 osc.type = "sine";
                 
-                // Variación de tono aleatoria (para que no suenen todos los pops idénticos si mandan muchos)
                 const freqBase = 700 + Math.random() * 200; 
                 osc.frequency.setValueAtTime(freqBase, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.07);
@@ -95,31 +96,27 @@
             }
         }
 
-        // 🎯 Escuchamos cada vez que se suman puntos a la batalla
+        // 🎯 Escuchamos cada vez que se suman puntos a la batalla clásica
         socket.on('poder_salvar', (data) => {
             playPopSound();
             crearTextoFlotante(data.side, data.amount);
         });
 
-        // ✍️ Función que genera el texto en pantalla
+        // ✍️ Función que genera el texto flotante en pantalla
         function crearTextoFlotante(equipo, cantidad) {
             const popText = document.createElement('div');
             popText.className = 'pop-text';
             
-            // Definimos color y texto según el equipo dinámicamente
             if (equipo === 'salvar') {
-                popText.innerText = `+${cantidad} ${nombreEq1}`;
+                popText.innerText = `+${cantidad} ${nombreEq1}`.trim();
                 popText.style.color = colorEq1;
                 popText.style.textShadow = `4px 4px 0px #000, 0 0 20px ${colorEq1}`;
             } else {
-                popText.innerText = `+${cantidad} ${nombreEq2}`;
+                popText.innerText = `+${cantidad} ${nombreEq2}`.trim();
                 popText.style.color = colorEq2;
                 popText.style.textShadow = `4px 4px 0px #000, 0 0 20px ${colorEq2}`;
             }
 
-            // 🎯 CENTRADO ESTRICTO: Ajustamos las variables para que salgan mucho más al centro
-            // X: Entre 45% y 55% de la pantalla (apenas un 5% de desviación del centro)
-            // Y: Entre 50% y 65% de la pantalla (ideal para juegos en tercera persona como Roblox)
             const randomX = 45 + Math.random() * 10; 
             const randomY = 50 + Math.random() * 15; 
 
@@ -128,7 +125,6 @@
 
             document.body.appendChild(popText);
 
-            // 🗑️ Limpieza de memoria
             setTimeout(() => {
                 popText.remove();
             }, 1500);
