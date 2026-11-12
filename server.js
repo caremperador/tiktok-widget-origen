@@ -2,11 +2,18 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http, { cors: { origin: "*" }, maxHttpBufferSize: 1e8 });
-const { WebcastPushConnection } = require('tiktok-live-connector');
+const tiktokConnector = require('tiktok-live-connector');
+const { WebcastPushConnection, SignConfig } = tiktokConnector;
 const https = require('https');
 const fs = require('fs'); 
 const path = require('path'); 
 const setupGameEvents = require('./gameEvents'); 
+
+// 🔑 OPCIONAL: Pega aquí tu API Key gratuita de https://www.eulerstream.com o ponla en Render como variable SIGN_API_KEY
+const EULER_API_KEY = process.env.SIGN_API_KEY || "";
+if (EULER_API_KEY && SignConfig) {
+    SignConfig.apiKey = EULER_API_KEY;
+}
 
 const pathData = path.join(__dirname, 'data.json');
 const pathCatalogo = path.join(__dirname, 'catalogo_regalos.json'); 
@@ -40,7 +47,7 @@ app.get('/ultimo_seguidor', (req, res) => res.sendFile(path.join(__dirname, 'ove
 app.get('/ultimo_quiereme', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'ultimo_quiereme.html')));
 app.get('/wins_ruleta', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'wins_ruleta.html')));
 
-// Variables 100% en RAM (Nunca ensucian ni inflan data.json)
+// Variables en RAM (no inflan data.json)
 let topLikesMemoryRound = {}; 
 let topVIPMemoryRound = {};
 let teamSalvar = { total: 0, donators: {} };
@@ -60,6 +67,8 @@ let lastDonatorSuperReiniciar = { name: 'ESPERANDO', avatar: '' };
 let catalogoGlobal = [];
 let regalosDetectadosCuenta = [];
 let currentRoomId = null;
+let currentConnectedUser = "";
+let isConnectingNow = false;
 let currentTotalLikes = 0; 
 let userTeams = {}; 
 
@@ -144,7 +153,6 @@ if (fs.existsSync(pathData)) {
         let guardado = JSON.parse(fs.readFileSync(pathData, 'utf8')); 
         configGlobal = { ...configGlobal, ...guardado };
 
-        // Eliminar basura antigua de racha o likes guardados en disco
         delete configGlobal.racha;
         if (configGlobal.topLikes) {
             delete configGlobal.topLikes.currentRound;
@@ -178,7 +186,6 @@ let saveTimeout = null;
 function guardarEnArchivo(inmediato = false) {
     const escribir = () => {
         try {
-            // Clon ligero sin meter el catálogo gigante ni rondas temporales dentro de data.json
             const dataToSave = { ...configGlobal };
             delete dataToSave.regalosDisponibles;
             if (dataToSave.topLikes) delete dataToSave.topLikes.currentRound;
@@ -247,6 +254,7 @@ function sincronizarImagenesAsignadas() {
 sincronizarImagenesAsignadas();
 guardarEnArchivo(true);
 
+// Consulta HTTP directa a TikTok Webcast (No consume absolutamente nada de EulerStream)
 function fetchRegalosDirectoAPI(roomId) {
     return new Promise((resolve) => {
         const roomParam = roomId ? `&room_id=${roomId}` : '';
@@ -392,17 +400,14 @@ function guardarListaRegalosEnCatalogo(listaRegalos) {
     return { guardados: nuevosOActualizados, total: catalogoGlobal.length };
 }
 
-// 🌟 CERRAR RONDA GLOBAL: Cierra Top Donadores y formatea Top Likes en memoria salvo que keepOnGlobalClose esté activo
 function cerrarRondasGlobales() {
     let seGuardoVIP = false;
 
-    // 1. Si Top Likes NO tiene activado "Mantener likes", se formatea a 0 en RAM
     if (!configGlobal.topLikes?.keepOnGlobalClose) {
         topLikesMemoryRound = {};
         io.emit('top_likes_data_update', getTopLikesPayload());
     }
 
-    // 2. Procesar ganador de Top Donadores VIP
     let arrVIPs = Object.entries(topVIPMemoryRound).map(([u, d]) => ({userKey: u, ...d})).sort((a,b) => b.coins - a.coins);
     if (arrVIPs.length > 0) {
         let top1 = arrVIPs[0]; 
@@ -432,10 +437,10 @@ function cerrarRondasGlobales() {
 
 let tiktokLiveConnection = null;
 let desconexionIntencional = false;
+let reconnectTimer = null;
 const regalosProcesados = new Set();
 const combosActivos = new Map(); 
 
-// Emisión de Top Likes con throttle ligero (máximo 1 actualización cada 400ms para no saturar sockets)
 let likesEmitTimer = null;
 function emitTopLikesThrottled() {
     if (likesEmitTimer) return;
@@ -489,6 +494,12 @@ function emitSalvarUpdate(target) {
 }
 
 function desconectarTikTok() {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    isConnectingNow = false;
+    currentConnectedUser = "";
     if (tiktokLiveConnection) {
         desconexionIntencional = true;
         try { tiktokLiveConnection.disconnect(); } catch (e) {}
@@ -500,23 +511,38 @@ function desconectarTikTok() {
 }
 
 function conectarTikTok(usuario) {
+    if (!usuario || usuario.trim() === "") {
+        io.emit('estado_conexion', { estado: 'desconectado', msg: '⚠️ Ingresa un usuario para conectar' });
+        return;
+    }
+    let userLimpio = usuario.replace('@', '').trim().toLowerCase();
+
+    // 🛡️ CANDADO ANTI-RATE-LIMIT: Si ya está conectado o conectando a este mismo usuario, no gastar otra petición
+    if (isConnectingNow) {
+        io.emit('estado_conexion', { estado: 'conectando', msg: `⏳ Ya hay una conexión en curso a @${userLimpio}...` });
+        return;
+    }
+    if (tiktokLiveConnection && currentConnectedUser === userLimpio && !desconexionIntencional) {
+        io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Ya estás conectado a @${userLimpio}` });
+        return;
+    }
+
     desconectarTikTok();
-    if (!usuario || usuario.trim() === "") { io.emit('estado_conexion', { estado: 'desconectado', msg: '⚠️ Ingresa un usuario para conectar' }); return; }
-    let userLimpio = usuario.replace('@', '').trim();
     desconexionIntencional = false;
+    isConnectingNow = true;
     io.emit('estado_conexion', { estado: 'conectando', msg: `🟡 Conectando a @${userLimpio}...` });
     
-    let connectionInstance = new WebcastPushConnection(userLimpio);
+    let connectionInstance = new WebcastPushConnection(userLimpio, {
+        fetchRoomInfoOnConnect: true,
+        enableExtendedGiftInfo: true
+    });
     tiktokLiveConnection = connectionInstance;
 
     connectionInstance.connect().then(async (state) => {
+        isConnectingNow = false;
+        currentConnectedUser = userLimpio;
         currentRoomId = (state && state.roomId) ? state.roomId : connectionInstance.roomId;
 
-        if (state && Array.isArray(state.availableGifts) && state.availableGifts.length > 0) {
-            await obtenerRegalosDeCuentaTikTok({ fetchAvailableGifts: async () => state.availableGifts }, currentRoomId);
-        }
-
-        io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 📡 Sincronizando regalos...` });
         if (!configGlobal.historial.includes(userLimpio)) {
             configGlobal.historial.unshift(userLimpio);
             if (configGlobal.historial.length > 10) configGlobal.historial.pop();
@@ -524,30 +550,55 @@ function conectarTikTok(usuario) {
         }
         io.emit('config_actual', configGlobal);
 
-        const detectados = regalosDetectadosCuenta.length > 0
-            ? regalosDetectadosCuenta
-            : await obtenerRegalosDeCuentaTikTok(connectionInstance, currentRoomId);
-
-        if (detectados.length > 0) {
-            io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 🎁 ${detectados.length} Regalos Listos` });
+        // Si TikTok ya entregó availableGifts dentro del estado de conexión inicial, los usamos sin hacer otra petición
+        if (state && Array.isArray(state.availableGifts) && state.availableGifts.length > 0) {
+            await obtenerRegalosDeCuentaTikTok({ fetchAvailableGifts: async () => state.availableGifts }, currentRoomId);
         } else {
-            io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 📡 Radar Activo` });
+            await obtenerRegalosDeCuentaTikTok(null, currentRoomId);
         }
 
+        io.emit('estado_conexion', {
+            estado: 'conectado',
+            msg: `🟢 Conectado a @${userLimpio} | 🎁 ${catalogoGlobal.length} Regalos en Base de Datos`
+        });
+
     }).catch(async (err) => {
-        await obtenerRegalosDeCuentaTikTok(connectionInstance);
-        io.emit('estado_conexion', { estado: 'error', msg: `❌ Error: ${err.message}` });
+        isConnectingNow = false;
+        currentConnectedUser = "";
+        const errMsg = err && err.message ? err.message : String(err);
+
+        // Cargar regalos desde la API pública de TikTok sin usar EulerStream
+        await obtenerRegalosDeCuentaTikTok(null, null);
+
+        if (errMsg.includes('rate_limit') || errMsg.includes('Rate Limited')) {
+            io.emit('estado_conexion', {
+                estado: 'error',
+                msg: `❌ Límite de conexiones por hora alcanzado en EulerStream. Crea tu API Key gratis en eulerstream.com y pégala en EULER_API_KEY (línea 12 de server.js).`
+            });
+        } else {
+            io.emit('estado_conexion', { estado: 'error', msg: `❌ Error: ${errMsg}` });
+        }
     });
 
     connectionInstance.on('disconnected', () => {
+        isConnectingNow = false;
+        currentConnectedUser = "";
         if (tiktokLiveConnection === connectionInstance && !desconexionIntencional) {
-            io.emit('estado_conexion', { estado: 'conectando', msg: '🟡 Conexión perdida. Auto-reconectando...' });
-            setTimeout(() => { conectarTikTok(userLimpio); }, 3000);
+            io.emit('estado_conexion', { estado: 'conectando', msg: '🟡 Conexión perdida. Reintentando en 15s (protección Rate-Limit)...' });
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(() => {
+                conectarTikTok(userLimpio);
+            }, 15000);
         }
     });
 
     connectionInstance.on('streamEnd', () => {
-        if (tiktokLiveConnection === connectionInstance) { desconexionIntencional = true; io.emit('estado_conexion', { estado: 'offline', msg: '⬛ El LIVE ha finalizado' }); }
+        isConnectingNow = false;
+        currentConnectedUser = "";
+        if (tiktokLiveConnection === connectionInstance) {
+            desconexionIntencional = true;
+            io.emit('estado_conexion', { estado: 'offline', msg: '⬛ El LIVE ha finalizado' });
+        }
     });
 
     connectionInstance.on('chat', data => {
@@ -604,7 +655,6 @@ function conectarTikTok(usuario) {
             }
         }
 
-        // 🌟 TOP LIKES 100% EN MEMORIA RAM (Cero escritura en disco)
         let user = data.uniqueId;
         let cleanName = (data.nickname || data.uniqueId).replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim() || user;
         if (cleanName.length > 12) cleanName = cleanName.substring(0, 12) + "...";
@@ -716,7 +766,6 @@ function conectarTikTok(usuario) {
         if (isNaN(cantidadAProcesar) || cantidadAProcesar <= 0) return;
         const totalCoins = unitPrice * cantidadAProcesar;
 
-        // Wins Ruleta
         if (configGlobal.winsRuleta) {
             let isSumarWins = configGlobal.winsRuleta.regalosSumar.some(r => Number(r.id) === giftId);
             let isRestarWins = configGlobal.winsRuleta.regalosRestar.some(r => Number(r.id) === giftId);
@@ -729,14 +778,12 @@ function conectarTikTok(usuario) {
             }
         }
 
-        // 🌟 SALÓN DE LA FAMA OPTIMIZADO (Ignora regalos pequeños y solo actualiza si supera su récord o entra al Top)
         if (configGlobal.salonFama) {
             if (!configGlobal.salonFama.record) configGlobal.salonFama.record = {};
             const minCoinsFama = parseInt(configGlobal.salonFama.minCoins) || 10;
 
             if (totalCoins >= minCoinsFama) {
                 const prevUserRecord = configGlobal.salonFama.record[user];
-                // Solo guarda y emite si el usuario no tenía récord o si este regalo supera su récord anterior
                 if (!prevUserRecord || totalCoins > prevUserRecord.diamonds) {
                     let bestGiftImage = (knownGift && knownGift.image) ? knownGift.image : giftImgUrl;
                     configGlobal.salonFama.record[user] = {
@@ -748,7 +795,6 @@ function conectarTikTok(usuario) {
                         diamonds: totalCoins
                     };
 
-                    // Mantener máximo 30 récords en disco para no saturar nunca data.json
                     let allRecords = Object.entries(configGlobal.salonFama.record).map(([k, v]) => ({key: k, ...v})).sort((a, b) => b.diamonds - a.diamonds);
                     if (allRecords.length > 30) {
                         allRecords.slice(30).forEach(item => delete configGlobal.salonFama.record[item.key]);
@@ -760,7 +806,6 @@ function conectarTikTok(usuario) {
             }
         }
 
-        // Top Donadores VIP (Ronda actual en RAM)
         if (!topVIPMemoryRound[user]) {
             topVIPMemoryRound[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
         } else {
@@ -770,7 +815,6 @@ function conectarTikTok(usuario) {
         topVIPMemoryRound[user].coins += totalCoins;
         io.emit('top_vip_data_update', getTopVIPPayload());
 
-        // Batalla Clásica (Monedas por Equipo 1 y Equipo 2)
         let isSalvarMonedas = configGlobal.equipo1.regalos.some(r => Number(r.id) === giftId);
         let isReiniciarMonedas = configGlobal.equipo2.regalos.some(r => Number(r.id) === giftId);
         
@@ -793,7 +837,6 @@ function conectarTikTok(usuario) {
             io.emit('poder_salvar', { side: 'reiniciar', amount: totalCoins });
         }
 
-        // Batalla Unidades
         if (configGlobal.unidades) {
             if (configGlobal.unidades.normalEnabled !== false) {
                 let isSalvarUnidad = (configGlobal.unidades.equipo1?.regalos || []).some(r => Number(r.id) === giftId);
@@ -831,7 +874,8 @@ function conectarTikTok(usuario) {
     });
 }
 
-if(configGlobal.username !== "") conectarTikTok(configGlobal.username);
+// 🛡️ NO auto-conectar al arrancar el servidor para ahorrar tu cuota de EulerStream.
+// Solo se conectará cuando presiones el botón "Conectar" en el panel.
 
 io.on('connection', (socket) => {
     socket.emit('config_actual', configGlobal);
@@ -858,19 +902,22 @@ io.on('connection', (socket) => {
     }
     emitSalvarUpdate(socket);
 
-    socket.on('comando_conectar', (usuario) => { configGlobal.username = usuario.trim(); guardarEnArchivo(true); conectarTikTok(configGlobal.username); });
+    socket.on('comando_conectar', (usuario) => {
+        configGlobal.username = (usuario || "").trim();
+        guardarEnArchivo(true);
+        conectarTikTok(configGlobal.username);
+    });
+
     socket.on('comando_desconectar', () => desconectarTikTok());
 
-    socket.on('escanear_regalos_tiktok', async (usuarioOpcional) => {
+    // 🛡️ Escáner de regalos sin crear nuevas instancias de WebcastPushConnection
+    socket.on('escanear_regalos_tiktok', async () => {
         try {
-            let instancia = tiktokLiveConnection;
-            if (!instancia) {
-                let userTarget = (usuarioOpcional || configGlobal.username || "").replace('@', '').trim();
-                if (userTarget) instancia = new WebcastPushConnection(userTarget);
-            }
-            const lista = await obtenerRegalosDeCuentaTikTok(instancia, currentRoomId);
+            const lista = await obtenerRegalosDeCuentaTikTok(tiktokLiveConnection, currentRoomId);
             if (lista.length === 0) {
-                socket.emit('resultado_guardar_regalos', { ok: false, msg: "⚠️ TikTok no devolvió regalos. Verifica la cuenta o conexión." });
+                socket.emit('resultado_guardar_regalos', { ok: false, msg: "⚠️ TikTok no devolvió regalos en este momento." });
+            } else {
+                socket.emit('resultado_guardar_regalos', { ok: true, msg: `✅ ¡Se sincronizaron ${lista.length} regalos oficiales sin gastar conexión!` });
             }
         } catch (e) {
             socket.emit('resultado_guardar_regalos', { ok: false, msg: "❌ Error al consultar regalos: " + e.message });
@@ -919,7 +966,6 @@ io.on('connection', (socket) => {
         emitSalvarUpdate(io); 
     });
 
-    // Salón de la Fama
     socket.on('salon_fama_limpiar', () => {
         configGlobal.salonFama.record = {};
         guardarEnArchivo(true);
@@ -937,7 +983,6 @@ io.on('connection', (socket) => {
         configGlobal.salonFama.alignment = opts.alignment || 'left';
         configGlobal.salonFama.minCoins = parseInt(opts.minCoins) >= 1 ? parseInt(opts.minCoins) : 10;
 
-        // Limpiar automáticamente los que estén debajo del nuevo mínimo de monedas
         for (const [k, v] of Object.entries(configGlobal.salonFama.record || {})) {
             if (v.diamonds < configGlobal.salonFama.minCoins) {
                 delete configGlobal.salonFama.record[k];
@@ -1006,7 +1051,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Top Likes (100% en RAM)
     socket.on('top_cerrar_ambas_rondas', () => cerrarRondasGlobales());
     socket.on('top_likes_limpiar_ronda', () => {
         topLikesMemoryRound = {};
@@ -1024,7 +1068,6 @@ io.on('connection', (socket) => {
         io.emit('top_likes_data_update', getTopLikesPayload());
     });
 
-    // Top Donadores VIP
     socket.on('top_vip_limpiar_ronda', () => {
         topVIPMemoryRound = {};
         io.emit('top_vip_data_update', getTopVIPPayload());
@@ -1187,7 +1230,6 @@ io.on('connection', (socket) => {
         emitSalvarUpdate(io);
     });
 
-    // Racha Versus / Top Donadores Batalla Clásica (Equipo 1 y Equipo 2)
     socket.on('registrar_victoria_versus', (data) => {
         let tipo = data.tipo; let user = data.user;
         if(!user || !user.name || user.name === 'ESPERANDO' || user.name === 'MANUAL') return;
