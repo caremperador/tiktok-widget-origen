@@ -53,6 +53,9 @@ let topVIPMemoryRound = {};
 let teamSalvar = { total: 0, donators: {} };
 let teamReiniciar = { total: 0, donators: {} };
 
+// 🌟 Ronda exclusiva de Racha Versus en RAM (No se borra cuando versus.html llega a 0, solo cuando cierras ronda manualmente)
+let rachaVersusRound = { salvar: {}, reiniciar: {} };
+
 // Unidades Normales y Súper Unidades en RAM
 let teamSalvarUnidades = { total: 0 };
 let teamReiniciarUnidades = { total: 0 };
@@ -221,6 +224,64 @@ function getTopVIPPayload() {
     };
 }
 
+function getRachaVersusPayload() {
+    let listSalvar = Object.entries(rachaVersusRound.salvar)
+        .map(([userKey, info]) => ({ userKey, name: info.displayName, coins: info.coins, avatar: info.avatar }))
+        .sort((a, b) => b.coins - a.coins);
+
+    let listReiniciar = Object.entries(rachaVersusRound.reiniciar)
+        .map(([userKey, info]) => ({ userKey, name: info.displayName, coins: info.coins, avatar: info.avatar }))
+        .sort((a, b) => b.coins - a.coins);
+
+    return {
+        ...configGlobal.rachaVersus,
+        topActualSalvar: listSalvar[0] || null,
+        topActualReiniciar: listReiniciar[0] || null,
+        roundSalvarList: listSalvar.slice(0, 20),
+        roundReiniciarList: listReiniciar.slice(0, 20)
+    };
+}
+
+function cerrarRondaRachaVersus() {
+    let listSalvar = Object.entries(rachaVersusRound.salvar)
+        .map(([userKey, info]) => ({ userKey, ...info }))
+        .sort((a, b) => b.coins - a.coins);
+
+    let listReiniciar = Object.entries(rachaVersusRound.reiniciar)
+        .map(([userKey, info]) => ({ userKey, ...info }))
+        .sort((a, b) => b.coins - a.coins);
+
+    let huboCambios = false;
+
+    if (listSalvar.length > 0 && listSalvar[0].coins > 0) {
+        let winner1 = listSalvar[0];
+        let key1 = winner1.userKey;
+        if (!configGlobal.rachaVersus.salvadas[key1]) {
+            configGlobal.rachaVersus.salvadas[key1] = { avatar: winner1.avatar, displayName: winner1.displayName, count: 0 };
+        }
+        configGlobal.rachaVersus.salvadas[key1].count += 1;
+        configGlobal.rachaVersus.salvadas[key1].avatar = winner1.avatar;
+        configGlobal.rachaVersus.salvadas[key1].displayName = winner1.displayName;
+        huboCambios = true;
+    }
+
+    if (listReiniciar.length > 0 && listReiniciar[0].coins > 0) {
+        let winner2 = listReiniciar[0];
+        let key2 = winner2.userKey;
+        if (!configGlobal.rachaVersus.reinicios[key2]) {
+            configGlobal.rachaVersus.reinicios[key2] = { avatar: winner2.avatar, displayName: winner2.displayName, count: 0 };
+        }
+        configGlobal.rachaVersus.reinicios[key2].count += 1;
+        configGlobal.rachaVersus.reinicios[key2].avatar = winner2.avatar;
+        configGlobal.rachaVersus.reinicios[key2].displayName = winner2.displayName;
+        huboCambios = true;
+    }
+
+    rachaVersusRound = { salvar: {}, reiniciar: {} };
+    if (huboCambios) guardarEnArchivo(true);
+    io.emit('racha_versus_update', getRachaVersusPayload());
+}
+
 function sincronizarImagenesAsignadas() {
     const mapaCatalogo = new Map(catalogoGlobal.map(g => [Number(g.id), g]));
     const actualizarLista = (arr) => {
@@ -254,7 +315,6 @@ function sincronizarImagenesAsignadas() {
 sincronizarImagenesAsignadas();
 guardarEnArchivo(true);
 
-// Consulta HTTP directa a TikTok Webcast (No consume absolutamente nada de EulerStream)
 function fetchRegalosDirectoAPI(roomId) {
     return new Promise((resolve) => {
         const roomParam = roomId ? `&room_id=${roomId}` : '';
@@ -481,6 +541,8 @@ function emitSalvarUpdate(target) {
         donatorsReiniciar
     });
 
+    target.emit('racha_versus_update', getRachaVersusPayload());
+
     target.emit('actualizacion_unidades', { 
         totalSalvar: teamSalvarUnidades.total, 
         totalReiniciar: teamReiniciarUnidades.total, 
@@ -517,7 +579,6 @@ function conectarTikTok(usuario) {
     }
     let userLimpio = usuario.replace('@', '').trim().toLowerCase();
 
-    // 🛡️ CANDADO ANTI-RATE-LIMIT: Si ya está conectado o conectando a este mismo usuario, no gastar otra petición
     if (isConnectingNow) {
         io.emit('estado_conexion', { estado: 'conectando', msg: `⏳ Ya hay una conexión en curso a @${userLimpio}...` });
         return;
@@ -550,7 +611,6 @@ function conectarTikTok(usuario) {
         }
         io.emit('config_actual', configGlobal);
 
-        // Si TikTok ya entregó availableGifts dentro del estado de conexión inicial, los usamos sin hacer otra petición
         if (state && Array.isArray(state.availableGifts) && state.availableGifts.length > 0) {
             await obtenerRegalosDeCuentaTikTok({ fetchAvailableGifts: async () => state.availableGifts }, currentRoomId);
         } else {
@@ -567,13 +627,12 @@ function conectarTikTok(usuario) {
         currentConnectedUser = "";
         const errMsg = err && err.message ? err.message : String(err);
 
-        // Cargar regalos desde la API pública de TikTok sin usar EulerStream
         await obtenerRegalosDeCuentaTikTok(null, null);
 
         if (errMsg.includes('rate_limit') || errMsg.includes('Rate Limited')) {
             io.emit('estado_conexion', {
                 estado: 'error',
-                msg: `❌ Límite de conexiones por hora alcanzado en EulerStream. Crea tu API Key gratis en eulerstream.com y pégala en EULER_API_KEY (línea 12 de server.js).`
+                msg: `❌ Límite de EulerStream alcanzado. Crea tu API Key gratis en eulerstream.com y ponla en EULER_API_KEY (línea 12 de server.js).`
             });
         } else {
             io.emit('estado_conexion', { estado: 'error', msg: `❌ Error: ${errMsg}` });
@@ -584,7 +643,7 @@ function conectarTikTok(usuario) {
         isConnectingNow = false;
         currentConnectedUser = "";
         if (tiktokLiveConnection === connectionInstance && !desconexionIntencional) {
-            io.emit('estado_conexion', { estado: 'conectando', msg: '🟡 Conexión perdida. Reintentando en 15s (protección Rate-Limit)...' });
+            io.emit('estado_conexion', { estado: 'conectando', msg: '🟡 Conexión perdida. Reintentando en 15s...' });
             if (reconnectTimer) clearTimeout(reconnectTimer);
             reconnectTimer = setTimeout(() => {
                 conectarTikTok(userLimpio);
@@ -827,6 +886,13 @@ function conectarTikTok(usuario) {
             teamSalvar.donators[user].avatar = avatarUrl;
             teamSalvar.donators[user].displayName = cleanName;
             teamSalvar.donators[user].coins += totalCoins;
+
+            // Acumular en la ronda persistente de Racha Versus (Solo se reinicia cuando cierras ronda manualmente)
+            if (!rachaVersusRound.salvar[user]) rachaVersusRound.salvar[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
+            rachaVersusRound.salvar[user].avatar = avatarUrl;
+            rachaVersusRound.salvar[user].displayName = cleanName;
+            rachaVersusRound.salvar[user].coins += totalCoins;
+
             io.emit('poder_salvar', { side: 'salvar', amount: totalCoins });
         } else if (isReiniciarMonedas) {
             teamReiniciar.total += totalCoins;
@@ -834,6 +900,13 @@ function conectarTikTok(usuario) {
             teamReiniciar.donators[user].avatar = avatarUrl;
             teamReiniciar.donators[user].displayName = cleanName;
             teamReiniciar.donators[user].coins += totalCoins;
+
+            // Acumular en la ronda persistente de Racha Versus (Solo se reinicia cuando cierras ronda manualmente)
+            if (!rachaVersusRound.reiniciar[user]) rachaVersusRound.reiniciar[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
+            rachaVersusRound.reiniciar[user].avatar = avatarUrl;
+            rachaVersusRound.reiniciar[user].displayName = cleanName;
+            rachaVersusRound.reiniciar[user].coins += totalCoins;
+
             io.emit('poder_salvar', { side: 'reiniciar', amount: totalCoins });
         }
 
@@ -874,13 +947,10 @@ function conectarTikTok(usuario) {
     });
 }
 
-// 🛡️ NO auto-conectar al arrancar el servidor para ahorrar tu cuota de EulerStream.
-// Solo se conectará cuando presiones el botón "Conectar" en el panel.
-
 io.on('connection', (socket) => {
     socket.emit('config_actual', configGlobal);
     socket.emit('catalogo_actualizado', catalogoGlobal);
-    socket.emit('racha_versus_update', configGlobal.rachaVersus);
+    socket.emit('racha_versus_update', getRachaVersusPayload());
     socket.emit('sync_likes_actuales', currentTotalLikes);
     socket.emit('top_likes_data_update', getTopLikesPayload()); 
     socket.emit('top_vip_data_update', getTopVIPPayload()); 
@@ -910,14 +980,13 @@ io.on('connection', (socket) => {
 
     socket.on('comando_desconectar', () => desconectarTikTok());
 
-    // 🛡️ Escáner de regalos sin crear nuevas instancias de WebcastPushConnection
     socket.on('escanear_regalos_tiktok', async () => {
         try {
             const lista = await obtenerRegalosDeCuentaTikTok(tiktokLiveConnection, currentRoomId);
             if (lista.length === 0) {
                 socket.emit('resultado_guardar_regalos', { ok: false, msg: "⚠️ TikTok no devolvió regalos en este momento." });
             } else {
-                socket.emit('resultado_guardar_regalos', { ok: true, msg: `✅ ¡Se sincronizaron ${lista.length} regalos oficiales sin gastar conexión!` });
+                socket.emit('resultado_guardar_regalos', { ok: true, msg: `✅ ¡Se sincronizaron ${lista.length} regalos oficiales!` });
             }
         } catch (e) {
             socket.emit('resultado_guardar_regalos', { ok: false, msg: "❌ Error al consultar regalos: " + e.message });
@@ -1177,7 +1246,7 @@ io.on('connection', (socket) => {
             if(userActivo) configGlobal.username = userActivo;
             guardarEnArchivo(true);
             io.emit('config_actual', configGlobal);
-            io.emit('racha_versus_update', configGlobal.rachaVersus);
+            io.emit('racha_versus_update', getRachaVersusPayload());
             io.emit('top_vip_data_update', getTopVIPPayload());
         }
     });
@@ -1203,6 +1272,7 @@ io.on('connection', (socket) => {
         io.emit('config_actual', configGlobal);
     });
     
+    // El reset de la barra/contador de batalla solo reinicia el contador de batalla, NO borra la ronda de Racha Versus
     socket.on('reset', () => {
         teamSalvar = { total: 0, donators: {} }; 
         teamReiniciar = { total: 0, donators: {} };
@@ -1230,24 +1300,20 @@ io.on('connection', (socket) => {
         emitSalvarUpdate(io);
     });
 
-    socket.on('registrar_victoria_versus', (data) => {
-        let tipo = data.tipo; let user = data.user;
-        if(!user || !user.name || user.name === 'ESPERANDO' || user.name === 'MANUAL') return;
-        let targetObj = tipo === 'salvada' ? configGlobal.rachaVersus.salvadas : configGlobal.rachaVersus.reinicios;
-        if(!targetObj[user.name]) targetObj[user.name] = { avatar: user.avatar, displayName: user.name, count: 0, monedas: 0 };
-        targetObj[user.name].count += 1;
-        targetObj[user.name].monedas = (targetObj[user.name].monedas || 0) + (user.coins || 0);
-        targetObj[user.name].avatar = user.avatar;
-        guardarEnArchivo(true);
-        io.emit('racha_versus_update', configGlobal.rachaVersus);
+    // 🌟 CIERRE MANUAL DE RONDA EN RACHA VERSUS (+1 Copa al Top 1 de cada equipo y reinicia sus monedas de ronda)
+    socket.on('racha_versus_cerrar_ronda', () => {
+        cerrarRondaRachaVersus();
     });
+
+    // Ignoramos el registro automático de versus.html para que las copas solo se sumen cuando cierres ronda manualmente
+    socket.on('registrar_victoria_versus', () => {});
 
     socket.on('racha_versus_ajuste', (data) => {
         let targetObj = data.tipo === 'salvadas' ? configGlobal.rachaVersus.salvadas : configGlobal.rachaVersus.reinicios;
         if(targetObj[data.name]) {
             targetObj[data.name].count = Math.max(0, targetObj[data.name].count + data.amount);
             guardarEnArchivo(true);
-            io.emit('racha_versus_update', configGlobal.rachaVersus);
+            io.emit('racha_versus_update', getRachaVersusPayload());
         }
     });
     socket.on('racha_versus_eliminar', (data) => {
@@ -1255,14 +1321,14 @@ io.on('connection', (socket) => {
         if(targetObj[data.name]) {
             delete targetObj[data.name];
             guardarEnArchivo(true);
-            io.emit('racha_versus_update', configGlobal.rachaVersus);
+            io.emit('racha_versus_update', getRachaVersusPayload());
         }
     });
     socket.on('racha_versus_limpiar', (tipo) => {
         if(tipo === 'salvadas') configGlobal.rachaVersus.salvadas = {};
         else configGlobal.rachaVersus.reinicios = {};
         guardarEnArchivo(true);
-        io.emit('racha_versus_update', configGlobal.rachaVersus);
+        io.emit('racha_versus_update', getRachaVersusPayload());
     });
     socket.on('racha_versus_guardar_opciones', (opts) => {
         configGlobal.rachaVersus.showName = opts.showName !== false; 
@@ -1270,13 +1336,13 @@ io.on('connection', (socket) => {
         configGlobal.rachaVersus.showCoins = opts.showCoins !== false;
         configGlobal.rachaVersus.mirrorMode = !!opts.mirrorMode;
         guardarEnArchivo(true);
-        io.emit('racha_versus_update', configGlobal.rachaVersus);
+        io.emit('racha_versus_update', getRachaVersusPayload());
     });
     
+    // Limpiar la ronda actual de Racha Versus sin entregar copa
     socket.on('racha_versus_clear_visual', () => {
-        teamSalvar.donators = {};
-        teamReiniciar.donators = {};
-        emitSalvarUpdate(io);
+        rachaVersusRound = { salvar: {}, reiniciar: {} };
+        io.emit('racha_versus_update', getRachaVersusPayload());
         io.emit('racha_versus_clear_visual');
     });
 
