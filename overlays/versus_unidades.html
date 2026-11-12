@@ -19,13 +19,8 @@
             -webkit-text-stroke-linejoin: round;
         }
 
-        .countdown-zone {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
+        .countdown-zone { position: relative; width: 100vw; height: 100vh; }
         
-        /* 📌 MODO NORMAL: LÍNEA 1 POSICIÓN 100% FIJA E INMÓVIL (Arriba: 32%) */
         .countdown-line1 { 
             position: absolute;
             top: 32%; 
@@ -72,7 +67,6 @@
             transform: translateY(2px);
         }
 
-        /* 📌 MODO NORMAL: BLOQUE DE CUENTA ATRÁS ABAJO (Fijo en top: 47%) */
         .countdown-bottom-block {
             position: absolute;
             top: 47%;
@@ -101,7 +95,6 @@
             text-align: center;
         }
 
-        /* ⚡ MODO SÚPER RESET: SIEMPRE ABAJO (Misma coordenada exacta top: 47%) */
         #super-reset-zone {
             position: absolute;
             top: 47%;
@@ -121,11 +114,7 @@
             border: 4px solid #000000;
             border-radius: 14px;
             padding: 3px 26px 1px 26px;
-            box-shadow: 
-                inset 0 3px 0 rgba(255, 255, 255, 0.75),
-                0 5px 0 #000000, 
-                0 8px 18px rgba(0, 0, 0, 0.65),
-                0 0 20px rgba(255, 215, 0, 0.55);
+            box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.75), 0 5px 0 #000000, 0 8px 18px rgba(0, 0, 0, 0.65), 0 0 20px rgba(255, 215, 0, 0.55);
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -183,15 +172,8 @@
             z-index: 2;
         }
 
-        @keyframes superPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        @keyframes superFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-3px); }
-        }
+        @keyframes superPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes superFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }
 
         #winner-zone {
             position: absolute;
@@ -221,30 +203,27 @@
     
     <div class="widget-wrapper">
         <div class="countdown-zone" id="countdown-display">
-            <!-- MODO NORMAL: Línea 1 Fija arriba (32%) -->
             <div class="countdown-line1" id="countdown-line1-text"></div>
             
-            <!-- MODO NORMAL: Bloque inferior independiente (47%) -->
             <div class="countdown-bottom-block" id="countdown-bottom-block">
                 <div class="countdown-line2" id="countdown-line2-text">REINICIANDO EN</div>
                 <div class="countdown-number" id="timer">30</div>
             </div>
 
-            <!-- ⚡ MODO SÚPER RESET: SIEMPRE ABAJO (47%) -->
             <div id="super-reset-zone">
                 <div class="super-timer-badge">
                     <span class="super-timer-num" id="super-timer">30</span>
                 </div>
                 <div class="super-gift-wrap">
                     <span class="super-qty-badge" id="super-qty" style="display:none;">2</span>
-                    <img id="super-gift-img" class="super-gift-img" src="https://i.imgur.com/ssCEDme.png">
-                    <img id="super-gift-img2" class="super-gift-img" src="https://i.imgur.com/7982rrb.png" style="display:none;">
+                    <img id="super-gift-img" class="super-gift-img" referrerpolicy="no-referrer" style="display:none;">
+                    <img id="super-gift-img2" class="super-gift-img" referrerpolicy="no-referrer" style="display:none;">
                 </div>
                 <div class="super-action-text" id="super-action-text">SALVAR</div>
             </div>
             
             <div id="winner-zone">
-                <img id="winner-avatar" src="https://via.placeholder.com/150/222/fff?text=?">
+                <img id="winner-avatar" src="">
                 <div id="winner-title">¡TE REINICIÓ!</div>
                 <div id="winner-name">EL EQUIPO 2</div>
             </div>
@@ -254,36 +233,19 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        
-        const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
-        const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
-        const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
-        const DEFAULT_CORAL_IMG = "https://i.imgur.com/7982rrb.png";
+        let catalogoGlobal = [];
 
         let currentConfig = {
-            equipo1: {
-                nombre: "EQUIPO 1",
-                nombreSingular: "CAPIBARA",
-                nombrePlural: "CAPIBARAS",
-                color: "#00ff66",
-                imgUnidad: DEFAULT_CAPIBARA_IMG
-            },
-            equipo2: {
-                nombre: "EQUIPO 2",
-                nombreSingular: "DONA",
-                nombrePlural: "DONAS",
-                color: "#ff003c",
-                imgUnidad: DEFAULT_DONA_IMG
-            },
+            normalEnabled: true,
+            equipo1: { nombre: "EQUIPO 1", actionText: "SALVAR", color: "#00ff66", regalos: [] },
+            equipo2: { nombre: "EQUIPO 2", actionText: "RESET", color: "#ff003c", regalos: [] },
             enableCountdown: true,
-            countdownSeconds: 30,
+            countdownSeconds: 60,
             superReset: {
                 enabled: true,
                 countdownSeconds: 30,
                 customText: "SALVAR",
-                imgSalvar: DEFAULT_SANDIA_IMG,
-                imgSalvar2: DEFAULT_CORAL_IMG,
-                displayMode: "img1",
+                displayMode: "auto",
                 regalosSalvar: [],
                 regalosReiniciar: []
             },
@@ -296,9 +258,9 @@
                 colorL1: "#ffea00",
                 sizeL1: 52,
                 colorL2: "#ff0055",
-                sizeL2: 30,    /* Por defecto como está ahora, pero 100% libre para agrandar o achicar */
+                sizeL2: 30,
                 colorTimer: "#ffffff",
-                sizeTimer: 82  /* Por defecto como está ahora, pero 100% libre para agrandar o achicar */
+                sizeTimer: 82
             }
         };
 
@@ -312,6 +274,30 @@
         let wasLosing = false;
         let wasSuperLosing = false;
         let latestData = { totalSalvar: 0, totalReiniciar: 0, totalSuperSalvar: 0, totalSuperReiniciar: 0 }; 
+
+        // Obtiene automáticamente la imagen oficial desde el regalo asignado en ese equipo
+        function obtenerImagenDeRegalo(regaloObj) {
+            if (!regaloObj) return "";
+            if (regaloObj.image && regaloObj.image.trim() !== "") return regaloObj.image.trim();
+            const enCat = catalogoGlobal.find(c => Number(c.id) === Number(regaloObj.id));
+            return (enCat && enCat.image && enCat.image.trim() !== "") ? enCat.image.trim() : "";
+        }
+
+        function obtenerPrimeraImagenDeLista(listaRegalos) {
+            if (!Array.isArray(listaRegalos) || listaRegalos.length === 0) return "";
+            for (const r of listaRegalos) {
+                const img = obtenerImagenDeRegalo(r);
+                if (img) return img;
+            }
+            return "";
+        }
+
+        function obtenerNombreDeLista(listaRegalos, fallback) {
+            if (Array.isArray(listaRegalos) && listaRegalos.length > 0 && listaRegalos[0].name) {
+                return listaRegalos[0].name.toUpperCase();
+            }
+            return fallback;
+        }
 
         function playAlertSound(isSuper = false) {
             try {
@@ -357,21 +343,18 @@
             l1.style.fontSize = finalSizeL1 + "px";
             l1.style.webkitTextStroke = strokePx + "px #000000";
 
-            // Toma directamente el valor que pongas en el panel (por defecto 30px)
             let finalSizeL2 = parseInt(style.sizeL2) || 30;
             const l2 = document.getElementById('countdown-line2-text');
             l2.style.color = style.colorL2 || "#ff0055"; 
             l2.style.fontSize = finalSizeL2 + "px";
             l2.style.webkitTextStroke = (strokePx * (finalSizeL2 / 42)) + "px #000000";
 
-            // Toma directamente el valor que pongas en el panel (por defecto 82px)
             let finalSizeTimer = parseInt(style.sizeTimer) || 82;
             const lt = document.getElementById('timer');
             lt.style.color = style.colorTimer || "#ffffff"; 
             lt.style.fontSize = finalSizeTimer + "px";
             lt.style.webkitTextStroke = (strokePx * (finalSizeTimer / 78)) + "px #000000";
 
-            // Escala configurable para todo el bloque de Súper Reset (por defecto 100%)
             let superScaleVal = (parseFloat(style.superScale) || 100) / 100;
             const superZone = document.getElementById('super-reset-zone');
             superZone.style.transform = `translateX(-50%) scale(${superScaleVal})`;
@@ -384,58 +367,36 @@
             const dist = style.shadowDistance !== undefined ? style.shadowDistance : 4;
             const shadowColor = `rgba(0,0,0,${op})`;
 
-            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
-            l2.style.textShadow = `0px ${Math.max(dist - 1, 2)}px 0px #000000, 0px ${dist}px 6px${shadowColor}`;
+            l1.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px ${shadowColor}`;
+            l2.style.textShadow = `0px ${Math.max(dist - 1, 2)}px 0px #000000, 0px ${dist}px 6px ${shadowColor}`;
             lt.style.textShadow = `0px ${dist}px 0px #000000, 0 0 22px rgba(255, 0, 85, 0.8), 0 0 8px rgba(255, 0, 60, 0.6)`;
-            superAction.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px${shadowColor}`;
+            superAction.style.textShadow = `0px ${dist}px 0px #000000, 0px ${dist + 2}px 8px ${shadowColor}`;
         }
 
-        applyDesign(currentConfig.battleStyle);
-        procesarActualizacionVisual(latestData);
-
         socket.on('config_actual', (config) => {
+            if (config && Array.isArray(config.regalosDisponibles)) {
+                catalogoGlobal = config.regalosDisponibles;
+            }
             if(config && config.unidades) {
-                let sConf = config.unidades.superReset || {};
                 currentConfig = {
                     ...currentConfig,
                     ...config.unidades,
-                    equipo1: {
-                        ...currentConfig.equipo1,
-                        ...(config.unidades.equipo1 || {}),
-                        imgUnidad: (config.unidades.equipo1?.imgUnidad && config.unidades.equipo1.imgUnidad.trim() !== "")
-                            ? config.unidades.equipo1.imgUnidad.trim()
-                            : DEFAULT_CAPIBARA_IMG
-                    },
-                    equipo2: {
-                        ...currentConfig.equipo2,
-                        ...(config.unidades.equipo2 || {}),
-                        imgUnidad: (config.unidades.equipo2?.imgUnidad && config.unidades.equipo2.imgUnidad.trim() !== "")
-                            ? config.unidades.equipo2.imgUnidad.trim()
-                            : DEFAULT_DONA_IMG
-                    },
-                    superReset: {
-                        ...currentConfig.superReset,
-                        ...sConf,
-                        countdownSeconds: sConf.countdownSeconds || 30,
-                        customText: (sConf.customText && sConf.customText.trim() !== "")
-                            ? sConf.customText.trim()
-                            : "SALVAR",
-                        imgSalvar: (sConf.imgSalvar && sConf.imgSalvar.trim() !== "")
-                            ? sConf.imgSalvar.trim()
-                            : DEFAULT_SANDIA_IMG,
-                        imgSalvar2: (sConf.imgSalvar2 && sConf.imgSalvar2.trim() !== "")
-                            ? sConf.imgSalvar2.trim()
-                            : DEFAULT_CORAL_IMG,
-                        displayMode: sConf.displayMode || "img1"
-                    },
-                    battleStyle: {
-                        ...currentConfig.battleStyle,
-                        ...(config.unidades.battleStyle || {})
-                    }
+                    normalEnabled: config.unidades.normalEnabled !== false,
+                    equipo1: { ...currentConfig.equipo1, ...(config.unidades.equipo1 || {}) },
+                    equipo2: { ...currentConfig.equipo2, ...(config.unidades.equipo2 || {}) },
+                    superReset: { ...currentConfig.superReset, ...(config.unidades.superReset || {}) },
+                    battleStyle: { ...currentConfig.battleStyle, ...(config.unidades.battleStyle || {}) }
                 };
             }
             applyDesign(currentConfig.battleStyle);
             procesarActualizacionVisual(latestData);
+        });
+
+        socket.on('catalogo_actualizado', (nuevoCat) => {
+            if (Array.isArray(nuevoCat)) {
+                catalogoGlobal = nuevoCat;
+                procesarActualizacionVisual(latestData);
+            }
         });
 
         function clearAllTimers() {
@@ -471,21 +432,15 @@
             let winnerTitle = document.getElementById('winner-title');
             let winnerName = document.getElementById('winner-name');
 
-            winnerImg.src = topReiniciar.avatar ? topReiniciar.avatar : 'https://via.placeholder.com/150/222/fff?text=?';
+            winnerImg.src = topReiniciar.avatar || '';
+            winnerImg.style.display = topReiniciar.avatar ? 'block' : 'none';
             winnerImg.style.borderColor = c2;
             winnerImg.style.boxShadow = `0 0 20px ${c2}`;
             
             winnerTitle.innerText = isSuper ? `¡SÚPER RESET!` : `¡TE REINICIÓ!`;
             winnerTitle.style.color = c2;
             winnerName.innerText = cleanName;
-            winnerName.style.color = "#ffffff";
             
-            const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
-            const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
-            
-            winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c2}`;
-            winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
-
             document.getElementById('winner-zone').style.display = 'flex';
             socket.emit('reset_unidades');
 
@@ -515,19 +470,14 @@
             let winnerTitle = document.getElementById('winner-title');
             let winnerName = document.getElementById('winner-name');
 
-            winnerImg.src = topSalvar.avatar ? topSalvar.avatar : 'https://via.placeholder.com/150/222/fff?text=?';
+            winnerImg.src = topSalvar.avatar || '';
+            winnerImg.style.display = topSalvar.avatar ? 'block' : 'none';
             winnerImg.style.borderColor = c1;
             winnerImg.style.boxShadow = `0 0 20px ${c1}`;
             
             winnerTitle.innerText = isSuper ? `¡SÚPER SALVADA!` : `¡TE SALVÓ!`;
             winnerTitle.style.color = c1;
             winnerName.innerText = cleanName;
-            winnerName.style.color = "#ffffff";
-            
-            const op = currentConfig.battleStyle?.shadowOpacity !== undefined ? currentConfig.battleStyle.shadowOpacity : 1.0;
-            const dist = currentConfig.battleStyle?.shadowDistance !== undefined ? currentConfig.battleStyle.shadowDistance : 4;
-            winnerTitle.style.textShadow = `${dist}px${dist}px 0px rgba(0,0,0,${op}), 0 0 20px${c1}`;
-            winnerName.style.textShadow = `${dist}px ${dist}px 0px rgba(0,0,0,${op})`;
 
             document.getElementById('winner-zone').style.display = 'flex';
 
@@ -549,14 +499,13 @@
 
         function renderEquationHTML(amount, imgUrl, fallbackName, actionWord) {
             let numColor = currentConfig?.battleStyle?.colorL1 || "#ffea00";
-            let showNumber = amount > 1;
-            let numberSpan = showNumber ? `<span class="eq-num" style="color:${numColor};">${amount}</span>` : ``;
+            let numberSpan = amount > 1 ? `<span class="eq-num" style="color:${numColor};">${amount}</span>` : ``;
 
             if (imgUrl && imgUrl !== "") {
                 return `
                     <div class="equation-row">
                         ${numberSpan}
-                        <img src="${imgUrl}" class="eq-gift-img">
+                        <img src="${imgUrl}" class="eq-gift-img" referrerpolicy="no-referrer">
                         <span class="eq-label">= ${actionWord}</span>
                     </div>
                 `;
@@ -570,27 +519,32 @@
             }
         }
 
+        // Toma automáticamente las imágenes de los regalos asignados en Súper Salvar
         function updateSuperImages() {
             let sr = currentConfig.superReset || {};
-            let img1Url = (sr.imgSalvar && sr.imgSalvar.trim() !== "") ? sr.imgSalvar.trim() : DEFAULT_SANDIA_IMG;
-            let img2Url = (sr.imgSalvar2 && sr.imgSalvar2.trim() !== "") ? sr.imgSalvar2.trim() : DEFAULT_CORAL_IMG;
-            let mode = sr.displayMode || "img1";
+            let regalosSalvar = sr.regalosSalvar || [];
+            let img1Url = obtenerImagenDeRegalo(regalosSalvar[0]);
+            let img2Url = obtenerImagenDeRegalo(regalosSalvar[1]);
+            let mode = sr.displayMode || "auto";
 
             let el1 = document.getElementById('super-gift-img');
             let el2 = document.getElementById('super-gift-img2');
 
-            if (mode === "img2") {
+            if (mode === "img2" && img2Url) {
                 el1.src = img2Url;
                 el1.style.display = "inline-block";
                 el2.style.display = "none";
-            } else if (mode === "both") {
+            } else if ((mode === "both" || mode === "auto") && img1Url && img2Url) {
                 el1.src = img1Url;
                 el2.src = img2Url;
                 el1.style.display = "inline-block";
                 el2.style.display = "inline-block";
-            } else {
+            } else if (img1Url) {
                 el1.src = img1Url;
                 el1.style.display = "inline-block";
+                el2.style.display = "none";
+            } else {
+                el1.style.display = "none";
                 el2.style.display = "none";
             }
         }
@@ -603,8 +557,11 @@
             let superSalvarPts = data ? (data.totalSuperSalvar || 0) : 0;
             let superReiniciarPts = data ? (data.totalSuperReiniciar || 0) : 0;
 
-            let srConfig = currentConfig.superReset || { enabled: true, countdownSeconds: 30, customText: "SALVAR", imgSalvar: DEFAULT_SANDIA_IMG, imgSalvar2: DEFAULT_CORAL_IMG };
-            let isSuperLosing = (srConfig.enabled !== false) && (superReiniciarPts > superSalvarPts);
+            let normalEnabled = currentConfig.normalEnabled !== false;
+            let srConfig = currentConfig.superReset || { enabled: true, countdownSeconds: 30, customText: "SALVAR" };
+            let superEnabled = srConfig.enabled !== false;
+
+            let isSuperLosing = superEnabled && (superReiniciarPts > superSalvarPts);
 
             if (wasSuperLosing && !isSuperLosing && superSalvarPts > 0) {
                 wasSuperLosing = false;
@@ -621,7 +578,7 @@
             let superZone = document.getElementById('super-reset-zone');
             let superTimerEl = document.getElementById('super-timer');
 
-            // ⚡ PRIORIDAD ABSOLUTA: MODO SÚPER RESET ACTIVO
+            // ⚡ 1. SI EL SÚPER RESET ESTÁ ACTIVO Y EN CUENTA REGRESIVA (Tiene prioridad)
             if (isSuperLosing) {
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 line1.style.display = 'none';
@@ -661,9 +618,25 @@
             if (superCountdownInterval) { clearInterval(superCountdownInterval); superCountdownInterval = null; }
             superZone.style.display = 'none';
 
-            // MODO NORMAL (DONAS VS CAPIBARAS)
+            // ⚡ 2. SI DESACTIVASTE EL MODO NORMAL Y SOLO USAS SÚPER RESET
+            if (!normalEnabled) {
+                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+                bottomBlock.style.display = 'none';
+
+                if (superEnabled) {
+                    let diffSuperReset = (superSalvarPts - superReiniciarPts) + 1;
+                    let imgSuperReset = obtenerPrimeraImagenDeLista(srConfig.regalosReiniciar);
+                    let nomSuperReset = obtenerNombreDeLista(srConfig.regalosReiniciar, "SÚPER");
+                    line1.style.display = 'flex';
+                    line1.innerHTML = renderEquationHTML(diffSuperReset, imgSuperReset, nomSuperReset, "RESET");
+                } else {
+                    line1.style.display = 'none';
+                }
+                return;
+            }
+
+            // 🟢 3. MODO NORMAL ACTIVO (Usa la imagen de los regalos asignados en Equipo 1 y Equipo 2)
             let isLosing = reiniciarPts > salvarPts;
-            
             if (wasLosing && !isLosing && salvarPts > 0) {
                 wasLosing = false; 
                 if (data.topSalvar && data.topSalvar.name !== 'ESPERANDO' && data.topSalvar.name !== 'MANUAL') {
@@ -675,32 +648,25 @@
 
             line1.style.display = 'flex';
 
-            let imgCapibara = (currentConfig.equipo1?.imgUnidad && currentConfig.equipo1.imgUnidad.trim() !== "") 
-                ? currentConfig.equipo1.imgUnidad.trim() 
-                : DEFAULT_CAPIBARA_IMG;
+            let imgEq1 = obtenerPrimeraImagenDeLista(currentConfig.equipo1?.regalos);
+            let imgEq2 = obtenerPrimeraImagenDeLista(currentConfig.equipo2?.regalos);
+            let nomEq1 = obtenerNombreDeLista(currentConfig.equipo1?.regalos, currentConfig.equipo1?.nombre || "EQUIPO 1");
+            let nomEq2 = obtenerNombreDeLista(currentConfig.equipo2?.regalos, currentConfig.equipo2?.nombre || "EQUIPO 2");
+            let actEq1 = currentConfig.equipo1?.actionText || "SALVAR";
+            let actEq2 = currentConfig.equipo2?.actionText || "RESET";
 
-            let imgDona = (currentConfig.equipo2?.imgUnidad && currentConfig.equipo2.imgUnidad.trim() !== "") 
-                ? currentConfig.equipo2.imgUnidad.trim() 
-                : DEFAULT_DONA_IMG;
-
-            // 🔴 ESCENARIO NORMAL 1: VA GANANDO EL EQUIPO 2
             if (reiniciarPts > salvarPts) {
                 let diff = reiniciarPts - salvarPts;
-                let nom1 = (diff === 1) ? (currentConfig.equipo1.nombreSingular || "CAPIBARA") : (currentConfig.equipo1.nombrePlural || "CAPIBARAS");
-
-                line1.innerHTML = renderEquationHTML(diff, imgCapibara, nom1, "SALVAR");
+                line1.innerHTML = renderEquationHTML(diff, imgEq1, nomEq1, actEq1);
 
                 if (currentConfig.enableCountdown !== false) {
                     bottomBlock.style.display = 'flex';
-
                     if (!countdownInterval) {
-                        timer = currentConfig.countdownSeconds || 30; 
+                        timer = currentConfig.countdownSeconds || 60; 
                         timerEl.innerText = timer;
-                        
                         countdownInterval = setInterval(() => {
                             timer--;
                             playAlertSound(false); 
-                            
                             if (timer <= 0) { 
                                 timer = 0; 
                                 triggerGameOver(latestData.topReiniciar, false); 
@@ -711,16 +677,11 @@
                 } else {
                     bottomBlock.style.display = 'none';
                 }
-            } 
-            // 🟢 ESCENARIO NORMAL 2: EMPATE (0-0) O VENTAJA EQUIPO 1
-            else {
+            } else {
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 bottomBlock.style.display = 'none'; 
-
                 let diff2 = (salvarPts - reiniciarPts) + 1;
-                let nom2 = (diff2 === 1) ? (currentConfig.equipo2.nombreSingular || "DONA") : (currentConfig.equipo2.nombrePlural || "DONAS");
-
-                line1.innerHTML = renderEquationHTML(diff2, imgDona, nom2, "RESET");
+                line1.innerHTML = renderEquationHTML(diff2, imgEq2, nomEq2, actEq2);
             }
         }
 
@@ -736,13 +697,9 @@
 
         socket.on('poder_salvar_unidades', (data) => {
             playCoinSound(); 
-            let x = canvas.width / 2; let color = 'white'; let y = canvas.height / 2; 
-            if(data.side === 'salvar') {
-                x = (50 / 100) * canvas.width - 20; color = currentConfig.equipo1.color || '#00ff66'; 
-            } else if (data.side === 'reiniciar') {
-                x = (50 / 100) * canvas.width + 20; color = currentConfig.equipo2.color || '#ff003c'; 
-            }
-            createExplosion(x, y, color, data.amount);
+            let x = data.side === 'salvar' ? (canvas.width / 2) - 20 : (canvas.width / 2) + 20;
+            let color = data.side === 'salvar' ? (currentConfig.equipo1.color || '#00ff66') : (currentConfig.equipo2.color || '#ff003c');
+            createExplosion(x, canvas.height / 2, color, data.amount);
         });
 
         function animate() {

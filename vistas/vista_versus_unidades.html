@@ -4,203 +4,213 @@
     <meta charset="utf-8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; }
-        .box { background: #1a1a24; border: 1px solid #cc00ff; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(204,0,255,0.2); max-width: 900px; margin-bottom: 30px;}
-        .box-super { background: #1c1624; border: 2px solid #ffea00; border-radius: 12px; padding: 25px; box-shadow: 0 5px 20px rgba(255, 234, 0, 0.18); max-width: 900px; margin-bottom: 30px;}
-        h3 { color: #cc00ff; margin-top: 0; border-bottom: 1px solid #cc00ff; padding-bottom: 10px; font-size: 18px; }
-        h3.super-title { color: #ffea00; border-bottom-color: #ffea00; }
+        body { background: #0b0b0f; color: #f0f0f5; font-family: 'Segoe UI', system-ui, sans-serif; padding: 30px; margin: 0; }
+        .box { background: #14141d; border: 1px solid #8a2be2; border-radius: 14px; padding: 25px; box-shadow: 0 6px 20px rgba(138,43,226,0.15); max-width: 980px; margin: 0 auto 28px auto; }
+        .box-super { background: #181422; border: 2px solid #ffea00; border-radius: 14px; padding: 25px; box-shadow: 0 6px 22px rgba(255, 234, 0, 0.14); max-width: 980px; margin: 0 auto 28px auto; }
+        h3 { color: #d580ff; margin-top: 0; border-bottom: 1px solid #2f2442; padding-bottom: 12px; font-size: 17px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; }
+        h3.super-title { color: #ffea00; border-bottom-color: rgba(255,234,0,0.3); }
         
-        .top-row { display: flex; gap: 40px; align-items: flex-start; margin-bottom: 25px;}
-        .col-layout { display: flex; gap: 30px; }
-        .team-col { flex: 1; display: flex; flex-direction: column; gap: 15px; padding: 25px; border-radius: 8px; border: 1px solid #333; background: #222;}
+        .top-row { display: flex; gap: 24px; align-items: stretch; margin-bottom: 22px; flex-wrap: wrap; }
+        .col-layout { display: flex; gap: 24px; flex-wrap: wrap; }
+        .team-col { flex: 1; min-width: 330px; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 12px; border: 1px solid #2d2d3d; background: #191924; }
         
-        label { font-weight: bold; font-size: 12px; text-transform: uppercase;}
-        input[type="text"], input[type="number"], select { width: 100%; background: #000; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 12px; font-size: 14px; box-sizing: border-box; }
-        input[type="color"] { width: 100%; height: 40px; background: #000; border: 1px solid #444; border-radius: 6px; padding: 2px; cursor: pointer;}
-        input:focus { border-color: #cc00ff; outline: none;}
+        label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; display: block; margin-bottom: 4px; }
+        input[type="text"], input[type="number"], select { width: 100%; background: #0c0c12; color: #fff; border: 1px solid #38384d; border-radius: 8px; padding: 10px 12px; font-size: 14px; box-sizing: border-box; }
+        input[type="color"] { width: 100%; height: 38px; background: #0c0c12; border: 1px solid #38384d; border-radius: 8px; padding: 2px; cursor: pointer; }
+        input:focus, select:focus { border-color: #cc00ff; outline: none; }
         
-        .checkbox-group { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: bold; margin-bottom: 10px;}
-        .checkbox-group input { width: 18px; height: 18px; accent-color: #cc00ff;}
+        .mode-toggle { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.06); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 800; color: #fff; }
+        .mode-toggle input { width: 18px; height: 18px; accent-color: #00ff66; cursor: pointer; margin: 0; }
+
+        /* Selector visual de regalos con buscador y foto */
+        .gift-picker-box { background: #0f0f17; border: 1px solid #323248; border-radius: 10px; padding: 10px; }
+        .gift-search-input { margin-bottom: 8px; padding: 9px 12px !important; font-size: 13px !important; background: #07070b !important; }
+        .gift-Picker-list { max-height: 185px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding-right: 4px; }
+        .gift-Picker-list::-webkit-scrollbar { width: 6px; }
+        .gift-Picker-list::-webkit-scrollbar-thumb { background: #3a3a52; border-radius: 6px; }
+        .gift-option-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: 7px; background: #171723; border: 1px solid #29293d; cursor: pointer; transition: 0.15s; }
+        .gift-option-row:hover { border-color: #cc00ff; background: #211c2e; }
+        .gift-option-row.active-row { background: rgba(0, 255, 102, 0.14); border-color: #00ff66; }
+        .gift-opt-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .gift-opt-img { width: 32px; height: 32px; object-fit: contain; border-radius: 6px; background: #08080d; padding: 2px; border: 1px solid #333; flex-shrink: 0; }
+        .gift-opt-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gift-opt-meta { font-size: 11px; color: #ffd700; font-weight: 700; }
+        .gift-opt-badge { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 5px; white-space: nowrap; }
+
+        .assigned-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .assigned-item { background: #0e0e16; border: 1px solid #8a2be2; padding: 5px 10px 5px 6px; border-radius: 8px; font-size: 12.5px; display: flex; gap: 8px; align-items: center; }
+        .assigned-item-super { background: #0e0e16; border: 1px solid #ffea00; padding: 5px 10px 5px 6px; border-radius: 8px; font-size: 12.5px; display: flex; gap: 8px; align-items: center; }
+        .assigned-item img, .assigned-item-super img { width: 26px; height: 26px; object-fit: contain; border-radius: 5px; background: #000; }
+        .btn-remove { background: none; color: #ff3355; border: none; cursor: pointer; padding: 0 2px; font-weight: bold; font-size: 14px; }
         
-        .btn-add { background: #444; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;}
-        .btn-add:hover { background: #555; }
-        
-        .assigned-list { display: flex; flex-wrap: wrap; gap: 8px; }
-        .assigned-item { background: #111; border: 1px solid #cc00ff; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: flex; gap: 10px; align-items: center;}
-        .assigned-item-super { background: #111; border: 1px solid #ffea00; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: flex; gap: 10px; align-items: center;}
-        .btn-remove { background: none; color: #ff003c; border: none; cursor: pointer; padding: 0; font-weight: bold;}
-        
-        .btn-guardar { width: 100%; padding: 18px; background: #cc00ff; color: white; font-size: 16px; font-weight: bold; border: none; cursor: pointer; border-radius: 8px; text-transform: uppercase;}
-        .btn-guardar:hover { filter: brightness(1.2);}
-        
+        .btn-guardar { width: 100%; padding: 16px; background: linear-gradient(135deg, #cc00ff, #8a2be2); color: white; font-size: 15px; font-weight: 800; border: none; cursor: pointer; border-radius: 8px; text-transform: uppercase; }
         .overlay-bar { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-overlay { flex: 1; padding: 12px 5px; background: #222; color: #cc00ff; font-size: 13px; font-weight: bold; border: 1px solid #cc00ff; cursor: pointer; border-radius: 8px;}
-        .btn-overlay:hover { background: #cc00ff; color: white;}
+        .btn-overlay { flex: 1; padding: 12px; background: #191924; color: #d580ff; font-size: 13px; font-weight: bold; border: 1px solid #cc00ff; cursor: pointer; border-radius: 8px; }
+        .btn-overlay:hover { background: #cc00ff; color: white; }
 
-        .design-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;}
-        .design-item { background: #111; padding: 15px; border-radius: 8px; border: 1px solid #444;}
+        .design-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+        .design-item { background: #191924; padding: 15px; border-radius: 10px; border: 1px solid #2c2c3c; }
         
-        .color-selector { display: flex; gap: 8px; align-items: center; }
-        .color-picker { width: 45px !important; padding: 0 !important; border: none !important; cursor: pointer; border-radius: 4px !important;}
-        .color-hex { flex: 1; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; }
-
-        .manual-points-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 5px; }
-        .mp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
-        .mp-title { color:#aaa; font-weight:bold; font-size:12px; text-transform:uppercase;}
-        .mp-score { font-size:24px; font-weight:900; text-shadow: 1px 1px 0 #000;}
-        .mp-controls { display: flex; gap: 8px; }
-        .mp-input { padding:10px !important; flex:1; background: #000 !important; }
-        .btn-mp { border:none; border-radius:6px; font-weight:bold; cursor:pointer; padding: 0 15px; font-size: 16px;}
-
-        .quick-btns { display: flex; gap: 8px; margin-top: 10px; }
-        .btn-quick { flex: 1; padding: 9px 0; border: none; border-radius: 6px; font-weight: 900; font-size: 14px; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
-        .btn-quick:hover { filter: brightness(1.15); }
-        .btn-quick:active { transform: scale(0.95); }
+        .manual-points-box { background: #111119; padding: 14px; border-radius: 10px; border: 1px solid #2e2e40; }
+        .mp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .mp-title { color: #aaa; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+        .mp-score { font-size: 24px; font-weight: 900; }
+        .quick-btns { display: flex; gap: 8px; margin-top: 8px; }
+        .btn-quick { flex: 1; padding: 8px 0; border-radius: 6px; font-weight: 900; font-size: 13px; cursor: pointer; }
         .btn-quick-eq1 { background: rgba(0, 255, 102, 0.18); color: #00ff66; border: 1px solid #00ff66; }
         .btn-quick-eq2 { background: rgba(255, 0, 60, 0.18); color: #ff003c; border: 1px solid #ff003c; }
     </style>
 </head>
 <body>
-    <!-- CAJA 1: BATALLA NORMAL (DONAS VS CAPIBARAS) -->
-    <div class="box">
-        <h3><i class="fa-solid fa-cube"></i> Mecánicas de Batalla Normal (Modo Unidades)</h3>
+    <!-- CAJA 1: BATALLA UNIDADES NORMAL (OPCIONAL) -->
+    <div class="box" id="box-normal-mode">
+        <h3>
+            <span><i class="fa-solid fa-cube"></i> Modo 1: Batalla Unidades Estándar</span>
+            <label class="mode-toggle">
+                <input type="checkbox" id="check-normal-enabled" checked onchange="guardarConfig(true)">
+                <span>Activar Batalla Unidades Normal</span>
+            </label>
+        </h3>
+
         <div class="top-row">
-            <div style="flex: 0.4;">
-                <label style="color: #cc00ff;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás</label>
-                <input type="number" id="input-countdown-sec" value="60" style="margin-bottom: 15px;">
-                
-                <button class="btn-clear" onclick="resetearValores()" style="width: 100%; background: #ff003c; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,0,60,0.4);"><i class="fa-solid fa-skull"></i> Resetear Todo a 0</button>
+            <div style="flex: 0.4; min-width: 220px;">
+                <label style="color: #d580ff;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás</label>
+                <input type="number" id="input-countdown-sec" value="60" style="margin-bottom: 12px;" onchange="guardarConfig(true)">
+                <button id="btn-reset-all" onclick="resetearValores()" style="width: 100%; background: #ff003c; color: white; border: none; padding: 13px; border-radius: 8px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; text-transform: uppercase;">
+                    <i class="fa-solid fa-rotate-left"></i> Resetear Todo a 0
+                </button>
             </div>
-            <div style="flex: 1; display: flex; flex-direction: column;">
-                <label class="checkbox-group"><input type="checkbox" id="check-countdown" checked> Activar Cuenta Regresiva Normal</label>
-                <p style="font-size: 13px; color: #ccc;">
-                    • En <b>Empate (0 - 0)</b> o si gana el Equipo 1, el overlay muestra: <b>[Dona] = RESET</b>.<br>
-                    • Cuando el <b>Equipo 2 (Reset)</b> supera en puntos al Equipo 1, el overlay muestra: <b>[Capibara] = SALVAR</b> arriba y <b>REINICIANDO EN + Cuenta regresiva</b> abajo.
+            <div style="flex: 1; background: #191924; padding: 15px; border-radius: 10px; border: 1px solid #2d2d3d;">
+                <label class="mode-toggle" style="margin-bottom: 8px; background: none; padding: 0;">
+                    <input type="checkbox" id="check-countdown" checked onchange="guardarConfig(true)">
+                    <span>Activar Cuenta Regresiva en Modo Normal</span>
+                </label>
+                <p style="font-size: 12.5px; color: #aaa; margin: 4px 0 0 0; line-height: 1.5;">
+                    • <b>Sin URLs manuales:</b> El icono que aparece en el overlay se toma automáticamente del regalo que selecciones abajo en cada equipo.<br>
+                    • Puedes activar <b>solo este Modo Normal</b>, <b>solo el Súper Reset</b> de abajo, o <b>ambos a la vez</b>.
                 </p>
             </div>
         </div>
 
-        <div class="col-layout">
-            <div class="team-col" style="border-color: #00ff66;">
-                <div><label style="color:#00ff66;" id="lbl-eq1">Nombre Equipo 1 (Salvar)</label><input type="text" id="eq1-nombre" value="EQUIPO 1"></div>
-                <div><label style="color:#ccc;">Color de Equipo</label>
-                    <div class="color-selector">
-                        <input type="color" id="eq1-color" class="color-picker" value="#00ff66">
-                        <input type="text" id="eq1-hex" class="color-hex" maxlength="7" value="#00FF66">
+        <div class="col-layout" id="normal-teams-container">
+            <!-- EQUIPO 1 NORMAL -->
+            <div class="team-col" style="border-top: 3px solid #00ff66;">
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="color:#00ff66;">Nombre Equipo 1 (Salvar)</label>
+                        <input type="text" id="eq1-nombre" value="EQUIPO 1" onchange="guardarConfig(true)">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="color:#00ff66;">Texto Acción (Ej: SALVAR)</label>
+                        <input type="text" id="eq1-action" value="SALVAR" onchange="guardarConfig(true)">
                     </div>
                 </div>
-                
-                <div><label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen de la Unidad (Capibara)</label>
-                <input type="text" id="eq1-img" value="https://i.imgur.com/OdX4lkD.png"></div>
-                
-                <div style="display:flex; gap:10px;">
-                    <div style="flex:1;"><label style="color:#00ff66;">Unidad Singular</label><input type="text" id="eq1-sing" value="CAPIBARA"></div>
-                    <div style="flex:1;"><label style="color:#00ff66;">Unidad Plural</label><input type="text" id="eq1-plur" value="CAPIBARAS"></div>
-                </div>
-                
+
                 <div class="manual-points-box">
                     <div class="mp-header">
-                        <span class="mp-title">Unidades Recibidas:</span>
+                        <span class="mp-title">Unidades Equipo 1:</span>
                         <span class="mp-score" id="lbl-pts-eq1-uni" style="color:#00ff66;">0</span>
-                    </div>
-                    <div class="mp-controls">
-                        <input type="number" id="manual-pts-eq1-uni" class="mp-input" placeholder="Cantidad manual...">
-                        <button class="btn-mp" style="background:#00ff66; color:black;" onclick="modificarPuntosUnidades(1, 'sumar')"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div class="quick-btns">
                         <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 1)">+1</button>
                         <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 5)">+5</button>
                         <button class="btn-quick btn-quick-eq1" onclick="sumarRapido(1, 10)">+10</button>
+                        <button class="btn-quick btn-quick-eq2" style="flex:0.6;" onclick="sumarRapido(1, -1)">-1</button>
                     </div>
                 </div>
 
-                <label style="color:#ccc;">Asignar Regalo Físico (Eq 1)</label>
-                <div style="display: flex; gap: 10px;"><select id="select-eq1-uni"></select><button class="btn-add" onclick="addGiftUnidades(1)">Añadir</button></div>
-                <div class="assigned-list" id="list-eq1-uni"></div>
+                <div>
+                    <label style="color:#00ff66;"><i class="fa-solid fa-gift"></i> Asignar Regalo Equipo 1 (La imagen se usa sola)</label>
+                    <div class="gift-picker-box">
+                        <input type="text" id="search-u1" class="gift-search-input" placeholder="🔍 Buscar regalo para Salvar..." oninput="renderAllPickers()">
+                        <div class="gift-Picker-list" id="picker-u1"></div>
+                    </div>
+                    <div class="assigned-list" id="list-eq1-uni"></div>
+                </div>
             </div>
 
-            <div class="team-col" style="border-color: #ff003c;">
-                <div><label style="color:#ff003c;" id="lbl-eq2">Nombre Equipo 2 (Reset)</label><input type="text" id="eq2-nombre" value="EQUIPO 2"></div>
-                <div><label style="color:#ccc;">Color de Equipo</label>
-                    <div class="color-selector">
-                        <input type="color" id="eq2-color" class="color-picker" value="#ff003c">
-                        <input type="text" id="eq2-hex" class="color-hex" maxlength="7" value="#FF003C">
+            <!-- EQUIPO 2 NORMAL -->
+            <div class="team-col" style="border-top: 3px solid #ff003c;">
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="color:#ff003c;">Nombre Equipo 2 (Reset)</label>
+                        <input type="text" id="eq2-nombre" value="EQUIPO 2" onchange="guardarConfig(true)">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="color:#ff003c;">Texto Acción (Ej: RESET)</label>
+                        <input type="text" id="eq2-action" value="RESET" onchange="guardarConfig(true)">
                     </div>
                 </div>
 
-                <div><label style="color:#ff003c;"><i class="fa-solid fa-image"></i> URL Imagen de la Unidad (Dona)</label>
-                <input type="text" id="eq2-img" value="https://i.imgur.com/Wwy2Kzf.png"></div>
-                
-                <div style="display:flex; gap:10px;">
-                    <div style="flex:1;"><label style="color:#ff003c;">Unidad Singular</label><input type="text" id="eq2-sing" value="DONA"></div>
-                    <div style="flex:1;"><label style="color:#ff003c;">Unidad Plural</label><input type="text" id="eq2-plur" value="DONAS"></div>
-                </div>
-                
                 <div class="manual-points-box">
                     <div class="mp-header">
-                        <span class="mp-title">Unidades Recibidas:</span>
+                        <span class="mp-title">Unidades Equipo 2:</span>
                         <span class="mp-score" id="lbl-pts-eq2-uni" style="color:#ff003c;">0</span>
-                    </div>
-                    <div class="mp-controls">
-                        <input type="number" id="manual-pts-eq2-uni" class="mp-input" placeholder="Cantidad manual...">
-                        <button class="btn-mp" style="background:#ff003c; color:white;" onclick="modificarPuntosUnidades(2, 'sumar')"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div class="quick-btns">
                         <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 1)">+1</button>
                         <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 5)">+5</button>
                         <button class="btn-quick btn-quick-eq2" onclick="sumarRapido(2, 10)">+10</button>
+                        <button class="btn-quick btn-quick-eq2" style="flex:0.6;" onclick="sumarRapido(2, -1)">-1</button>
                     </div>
                 </div>
 
-                <label style="color:#ccc;">Asignar Regalo Físico (Eq 2)</label>
-                <div style="display: flex; gap: 10px;"><select id="select-eq2-uni"></select><button class="btn-add" onclick="addGiftUnidades(2)">Añadir</button></div>
-                <div class="assigned-list" id="list-eq2-uni"></div>
+                <div>
+                    <label style="color:#ff003c;"><i class="fa-solid fa-gift"></i> Asignar Regalo Equipo 2 (La imagen se usa sola)</label>
+                    <div class="gift-picker-box">
+                        <input type="text" id="search-u2" class="gift-search-input" placeholder="🔍 Buscar regalo para Reset..." oninput="renderAllPickers()">
+                        <div class="gift-Picker-list" id="picker-u2"></div>
+                    </div>
+                    <div class="assigned-list" id="list-eq2-uni"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ⚡ CAJA 2: MODO SÚPER RESET / SÚPER SALVADA (SANDÍA + CORAL POR DEFECTO) -->
+    <!-- ⚡ CAJA 2: MODO SÚPER RESET (OPCIONAL O EXCLUSIVO) -->
     <div class="box-super">
-        <h3 class="super-title"><i class="fa-solid fa-bolt"></i> Súper Reset Instantáneo (Prioridad - Sandía / Coral vs Galaxia)</h3>
+        <h3 class="super-title">
+            <span><i class="fa-solid fa-bolt"></i> Modo 2: Súper Reset (Regalos Caros / VIP)</span>
+            <label class="mode-toggle">
+                <input type="checkbox" id="check-super-enabled" checked onchange="guardarConfig(true)">
+                <span>Activar Súper Reset</span>
+            </label>
+        </h3>
+
         <div class="top-row">
-            <div style="flex: 0.45;">
+            <div style="flex: 0.45; min-width: 220px;">
                 <label style="color: #ffea00;"><i class="fa-solid fa-stopwatch"></i> Segundos Cuenta Atrás (Súper Reset)</label>
-                <input type="number" id="super-countdown-sec" value="30" style="margin-bottom: 12px;">
-                
-                <button onclick="resetearSuperValores()" style="width: 100%; background: #ff9900; color: black; border: none; padding: 12px; border-radius: 6px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;"><i class="fa-solid fa-rotate-left"></i> Resetear solo Súper Reset a 0</button>
+                <input type="number" id="super-countdown-sec" value="30" style="margin-bottom: 12px;" onchange="guardarConfig(true)">
+                <button onclick="resetearSuperValores()" style="width: 100%; background: #ff9900; color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;">
+                    <i class="fa-solid fa-rotate-left"></i> Resetear Súper Reset a 0
+                </button>
             </div>
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                <label class="checkbox-group" style="color: #ffea00;"><input type="checkbox" id="check-super-enabled" checked> Activar Prioridad de Súper Reset</label>
-                <div>
-                    <label style="color: #ffea00;">Texto Inferior en el Overlay (Por defecto: SALVAR)</label>
-                    <input type="text" id="super-custom-text" value="SALVAR" placeholder="SALVAR">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:180px;">
+                        <label style="color: #ffea00;">Texto Inferior (Por defecto: SALVAR)</label>
+                        <input type="text" id="super-custom-text" value="SALVAR" onchange="guardarConfig(true)">
+                    </div>
+                    <div style="flex:1; min-width:180px;">
+                        <label style="color:#ffea00;">Iconos a mostrar en Súper Salvada</label>
+                        <select id="super-display-mode" onchange="guardarConfig(true)">
+                            <option value="auto">Automático (Muestra 1 o 2 según asignes)</option>
+                            <option value="img1">Solo el 1er regalo asignado</option>
+                            <option value="img2">Solo el 2do regalo asignado</option>
+                            <option value="both">Ambos regalos asignados</option>
+                        </select>
+                    </div>
                 </div>
+                <p style="font-size:12px; color:#ccc; margin:0;">
+                    💡 Si desactivas arriba la <b>Batalla Unidades Normal</b> y dejas activo solo <b>Súper Reset</b>, el overlay funcionará 100% en modo Súper Reset con los regalos que asignes aquí.
+                </p>
             </div>
         </div>
 
         <div class="col-layout">
-            <!-- Equipo 1 Súper Salvar (Sandía + Coral por defecto) -->
-            <div class="team-col" style="border-color: #00ff66;">
-                <label style="color:#00ff66; font-size:14px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Súper Salvada (Sandía y Coral)</label>
-                
-                <div>
-                    <label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen 1 (Por defecto: Sandía 1000)</label>
-                    <input type="text" id="super-eq1-img" value="https://i.imgur.com/ssCEDme.png">
-                </div>
-
-                <div>
-                    <label style="color:#00ff66;"><i class="fa-solid fa-image"></i> URL Imagen 2 (Por defecto: Coral 500)</label>
-                    <input type="text" id="super-eq1-img2" value="https://i.imgur.com/7982rrb.png">
-                </div>
-
-                <div>
-                    <label style="color:#ffea00;"><i class="fa-solid fa-eye"></i> ¿Qué imagen mostrar en el Súper Reset?</label>
-                    <select id="super-display-mode" onchange="guardarConfig(true)">
-                        <option value="img1">Mostrar Imagen 1 (Sandía)</option>
-                        <option value="img2">Mostrar Imagen 2 (Coral)</option>
-                        <option value="both">Mostrar Ambas Imágenes (Sandía + Coral)</option>
-                    </select>
-                </div>
+            <!-- Equipo 1 Súper Salvar -->
+            <div class="team-col" style="border-top: 3px solid #00ff66;">
+                <label style="color:#00ff66; font-size:13px;"><i class="fa-solid fa-shield-heart"></i> Equipo 1: Regalos Súper Salvada</label>
 
                 <div class="manual-points-box">
                     <div class="mp-header">
@@ -210,17 +220,23 @@
                     <div class="quick-btns">
                         <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 1)">+1 Salvar</button>
                         <button class="btn-quick btn-quick-eq1" onclick="sumarSuperRapido(1, 5)">+5</button>
+                        <button class="btn-quick btn-quick-eq2" style="flex:0.5;" onclick="sumarSuperRapido(1, -1)">-1</button>
                     </div>
                 </div>
 
-                <label style="color:#ccc;">Asignar Regalos Caros Salvar (Sandía / Coral)</label>
-                <div style="display: flex; gap: 10px;"><select id="select-super-eq1"></select><button class="btn-add" onclick="addGiftSuper(1)">Añadir</button></div>
-                <div class="assigned-list" id="list-super-eq1"></div>
+                <div>
+                    <label style="color:#00ff66;"><i class="fa-solid fa-magnifying-glass"></i> Asignar Regalos Súper Salvar (Sus fotos saldrán solas)</label>
+                    <div class="gift-picker-box">
+                        <input type="text" id="search-su1" class="gift-search-input" placeholder="🔍 Buscar regalo caro Salvar..." oninput="renderAllPickers()">
+                        <div class="gift-Picker-list" id="picker-su1"></div>
+                    </div>
+                    <div class="assigned-list" id="list-super-eq1"></div>
+                </div>
             </div>
 
-            <!-- Equipo 2 Súper Reset (Galaxia) -->
-            <div class="team-col" style="border-color: #ff003c;">
-                <label style="color:#ff003c; font-size:14px;"><i class="fa-solid fa-meteor"></i> Equipo 2: Súper Reset (Galaxia)</label>
+            <!-- Equipo 2 Súper Reset -->
+            <div class="team-col" style="border-top: 3px solid #ff003c;">
+                <label style="color:#ff003c; font-size:13px;"><i class="fa-solid fa-meteor"></i> Equipo 2: Regalos Súper Reset</label>
 
                 <div class="manual-points-box">
                     <div class="mp-header">
@@ -228,76 +244,78 @@
                         <span class="mp-score" id="lbl-pts-super-eq2" style="color:#ff003c;">0</span>
                     </div>
                     <div class="quick-btns">
-                        <button class="btn-quick btn-quick-eq2" onclick="sumarSuperRapido(2, 1)">+1 Galaxia (Probar)</button>
+                        <button class="btn-quick btn-quick-eq2" onclick="sumarSuperRapido(2, 1)">+1 Súper Reset (Probar)</button>
                         <button class="btn-quick btn-quick-eq2" onclick="sumarSuperRapido(2, 5)">+5</button>
+                        <button class="btn-quick btn-quick-eq2" style="flex:0.5;" onclick="sumarSuperRapido(2, -1)">-1</button>
                     </div>
                 </div>
 
-                <label style="color:#ccc;">Asignar Regalo Caro Reset (Ej: Galaxia)</label>
-                <div style="display: flex; gap: 10px;"><select id="select-super-eq2"></select><button class="btn-add" onclick="addGiftSuper(2)">Añadir</button></div>
-                <div class="assigned-list" id="list-super-eq2"></div>
+                <div>
+                    <label style="color:#ff003c;"><i class="fa-solid fa-magnifying-glass"></i> Asignar Regalos Súper Reset (Su foto saldrá sola)</label>
+                    <div class="gift-picker-box">
+                        <input type="text" id="search-su2" class="gift-search-input" placeholder="🔍 Buscar regalo caro Reset..." oninput="renderAllPickers()">
+                        <div class="gift-Picker-list" id="picker-su2"></div>
+                    </div>
+                    <div class="assigned-list" id="list-super-eq2"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- CAJA 3: DISEÑO Y TAMAÑOS CONFIGURABLES EN TIEMPO REAL -->
+    <!-- CAJA 3: DISEÑO Y TAMAÑOS CONFIGURABLES -->
     <div class="box">
-        <h3><i class="fa-solid fa-palette"></i> Diseño y Tamaños del Overlay (Configurable en Vivo)</h3>
-        <p style="font-size:12px; color:#aaa; margin-top:-5px;">Cambia cualquier tamaño en píxeles (px) o escala (%) y se reflejará inmediatamente en tu overlay al cambiar el número o guardar.</p>
+        <h3><span><i class="fa-solid fa-palette"></i> Diseño y Tamaños del Overlay</span></h3>
         <div class="design-grid">
             <div class="design-item">
-                <label style="color:#ccc;">Tipografía y Borde</label>
-                <select id="ds-font" style="margin-bottom: 5px;" onchange="guardarConfig(true)">
+                <label>Tipografía y Borde</label>
+                <select id="ds-font" style="margin-bottom: 6px;" onchange="guardarConfig(true)">
                     <option value="'Luckiest Guy', cursive">Luckiest Guy (Gaming)</option>
                     <option value="'Lilita One', cursive">Lilita One (Gordita)</option>
                     <option value="'Lemon', serif">Lemon (Curvas Gorditas)</option>
                     <option value="'Bebas Neue', cursive">Bebas Neue (Impactante)</option>
                     <option value="'Oswald', sans-serif">Oswald (Fuerte)</option>
-                    <option value="'Teko', sans-serif">Teko (Tecno)</option>
-                    <option value="'Russo One', sans-serif">Russo One (Sci-Fi)</option>
-                    <option value="'Anton', sans-serif">Anton (Titular)</option>
                     <option value="'Montserrat', sans-serif">Montserrat (Moderna)</option>
                 </select>
-                <label style="color:#aaa; font-size:10px;">Grosor Borde Negro</label>
+                <label style="font-size:10px;">Grosor Borde Negro</label>
                 <input type="number" id="ds-stroke" step="0.5" value="2.5" onchange="guardarConfig(true)">
             </div>
 
             <div class="design-item">
-                <label style="color:#ccc;">Sombras y Súper Reset</label>
-                <label style="color:#aaa; font-size:10px;">Opacidad Sombra (0 a 1)</label>
+                <label>Sombras y Escala</label>
+                <label style="font-size:10px;">Opacidad Sombra (0 a 1)</label>
                 <input type="number" id="ds-shadow-op" step="0.1" min="0" max="1" value="0.85" onchange="guardarConfig(true)">
-                <label style="color:#ffea00; font-size:10px; margin-top:5px;">Tamaño Súper Reset (%)</label>
+                <label style="color:#ffea00; font-size:10px; margin-top:6px;">Escala Súper Reset (%)</label>
                 <input type="number" id="ds-super-scale" step="5" value="100" onchange="guardarConfig(true)">
                 <input type="hidden" id="ds-shadow-dist" value="4">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ffd700;">
-                <label style="color:#ffd700;">Línea 1 ([Foto] = SALVAR)</label>
-                <label style="color:#aaa; font-size:10px;">Color Número / Texto Súper</label>
+                <label style="color:#ffd700;">Línea 1 ([Icono] = SALVAR)</label>
+                <label style="font-size:10px;">Color Número / Súper</label>
                 <input type="color" id="ds-c1" value="#ffea00" onchange="guardarConfig(true)">
-                <label style="color:#aaa; font-size:10px; margin-top:5px;">Tamaño Texto (px)</label>
+                <label style="font-size:10px; margin-top:6px;">Tamaño Texto (px)</label>
                 <input type="number" id="ds-s1" value="52" step="2" onchange="guardarConfig(true)">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ff003c;">
                 <label style="color:#ff003c;">Línea 2 (REINICIANDO EN)</label>
-                <label style="color:#aaa; font-size:10px;">Color</label>
+                <label style="font-size:10px;">Color</label>
                 <input type="color" id="ds-c2" value="#ff0055" onchange="guardarConfig(true)">
-                <label style="color:#ffd700; font-size:10px; margin-top:5px;">Tamaño "REINICIANDO EN" (px)</label>
+                <label style="font-size:10px; margin-top:6px;">Tamaño Texto (px)</label>
                 <input type="number" id="ds-s2" value="30" step="2" onchange="guardarConfig(true)">
             </div>
 
             <div class="design-item" style="border-top: 3px solid #ffffff;">
                 <label style="color:#ffffff;">Números (Segundos)</label>
-                <label style="color:#aaa; font-size:10px;">Color</label>
+                <label style="font-size:10px;">Color</label>
                 <input type="color" id="ds-ct" value="#ffffff" onchange="guardarConfig(true)">
-                <label style="color:#ffd700; font-size:10px; margin-top:5px;">Tamaño Segundos (px)</label>
+                <label style="font-size:10px; margin-top:6px;">Tamaño Segundos (px)</label>
                 <input type="number" id="ds-st" value="82" step="2" onchange="guardarConfig(true)">
             </div>
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 20px;">
-            <button class="btn-guardar" onclick="guardarConfig(false)" style="flex: 2;"><i class="fa-solid fa-floppy-disk"></i> Guardar Todo en Vivo</button>
+            <button class="btn-guardar" onclick="guardarConfig(false)"><i class="fa-solid fa-floppy-disk"></i> Guardar Todo en Vivo</button>
         </div>
 
         <div class="overlay-bar">
@@ -305,114 +323,140 @@
             <button class="btn-overlay" onclick="copiarURL('/versus_unidades')"><i class="fa-solid fa-link"></i> Copiar URL Unidades</button>
         </div>
         
-        <p id="mensaje" style="color:#00ff66; text-align:center; display:none; font-weight:bold;">✅ ¡Guardado y Aplicado!</p>
+        <p id="mensaje" style="color:#00ff66; text-align:center; display:none; font-weight:bold; margin-top:12px;">✅ ¡Guardado y Aplicado!</p>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
-        const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
-        const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
-        const DEFAULT_CORAL_IMG = "https://i.imgur.com/7982rrb.png";
+        const FALLBACK_ICON = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%23181824'/><text x='50%' y='58%' text-anchor='middle' fill='%23ffd700' font-size='20'>🎁</text></svg>";
 
         let globalGifts = []; 
         let eq1GiftsUni = []; 
         let eq2GiftsUni = [];
         let superEq1Gifts = [];
         let superEq2Gifts = [];
-        
-        function syncColors(pickerId, hexId, labelId) {
-            const picker = document.getElementById(pickerId);
-            const hex = document.getElementById(hexId);
-            const lbl = document.getElementById(labelId);
-            picker.addEventListener('input', (e) => { hex.value = e.target.value.toUpperCase(); lbl.style.color = e.target.value; });
-            hex.addEventListener('input', (e) => { let val = e.target.value; if(/^#[0-9A-F]{6}$/i.test(val)) { picker.value = val; lbl.style.color = val; } });
+
+        function obtenerImagenDeCatalogo(gift) {
+            if (!gift) return FALLBACK_ICON;
+            if (gift.image && gift.image.trim() !== "") return gift.image;
+            const enCat = globalGifts.find(g => Number(g.id) === Number(gift.id));
+            return (enCat && enCat.image && enCat.image.trim() !== "") ? enCat.image : FALLBACK_ICON;
         }
-        syncColors('eq1-color', 'eq1-hex', 'lbl-eq1');
-        syncColors('eq2-color', 'eq2-hex', 'lbl-eq2');
 
-        function renderDropdowns() {
-            let u1 = document.getElementById('select-eq1-uni'); 
-            let u2 = document.getElementById('select-eq2-uni');
-            let su1 = document.getElementById('select-super-eq1');
-            let su2 = document.getElementById('select-super-eq2');
+        function renderAllPickers() {
+            renderPicker('u1', 'search-u1', 'picker-u1', eq1GiftsUni);
+            renderPicker('u2', 'search-u2', 'picker-u2', eq2GiftsUni);
+            renderPicker('su1', 'search-su1', 'picker-su1', superEq1Gifts);
+            renderPicker('su2', 'search-su2', 'picker-su2', superEq2Gifts);
+        }
 
-            let vu1 = u1.value; let vu2 = u2.value;
-            let vsu1 = su1.value; let vsu2 = su2.value;
+        function renderPicker(groupKey, searchId, containerId, activeArr) {
+            const query = (document.getElementById(searchId).value || "").toLowerCase().trim();
+            const container = document.getElementById(containerId);
 
-            u1.innerHTML = ''; u2.innerHTML = '';
-            su1.innerHTML = ''; su2.innerHTML = '';
-            
-            globalGifts.forEach(g => { 
-                let enU1 = eq1GiftsUni.some(r => r.id === g.id);
-                let enU2 = eq2GiftsUni.some(r => r.id === g.id);
-                let enSU1 = superEq1Gifts.some(r => r.id === g.id);
-                let enSU2 = superEq2Gifts.some(r => r.id === g.id);
-                
-                let styleBg = ""; let textoAdd = "";
-                if (enU1) { styleBg = "background-color: #004d00; color: #00ff66;"; textoAdd = " ✅ [Eq 1]"; } 
-                else if (enU2) { styleBg = "background-color: #4d0012; color: #ff003c;"; textoAdd = " ✅ [Eq 2]"; }
-                else if (enSU1) { styleBg = "background-color: #1a4d00; color: #ffea00;"; textoAdd = " ⚡ [Súper Salvar]"; }
-                else if (enSU2) { styleBg = "background-color: #4d1a00; color: #ffea00;"; textoAdd = " ⚡ [Súper Reset]"; }
-                
-                let optUni = `<option value="${g.id}" style="${styleBg}">[ID: ${g.id}]${g.name} (${g.diamonds} Monedas)${textoAdd}</option>`; 
-                u1.innerHTML += optUni; u2.innerHTML += optUni; 
-                su1.innerHTML += optUni; su2.innerHTML += optUni;
+            let filtrados = globalGifts.filter(g => {
+                if (!query) return true;
+                return (g.name && g.name.toLowerCase().includes(query)) ||
+                       String(g.id).includes(query) ||
+                       String(g.diamonds) === query;
             });
 
-            if(vu1) u1.value = vu1; if(vu2) u2.value = vu2;
-            if(vsu1) su1.value = vsu1; if(vsu2) su2.value = vsu2;
+            filtrados.sort((a, b) => {
+                const aActive = activeArr.some(r => Number(r.id) === Number(a.id)) ? 0 : 1;
+                const bActive = activeArr.some(r => Number(r.id) === Number(b.id)) ? 0 : 1;
+                if (aActive !== bActive) return aActive - bActive;
+                return (a.diamonds - b.diamonds) || (a.id - b.id);
+            });
+
+            let html = '';
+            filtrados.slice(0, 100).forEach(g => {
+                const isSelected = activeArr.some(r => Number(r.id) === Number(g.id));
+                const imgUrl = obtenerImagenDeCatalogo(g);
+                const badge = isSelected
+                    ? `<span class="gift-opt-badge" style="background:#00ff66; color:#000;">✅ Asignado</span>`
+                    : `<span class="gift-opt-badge" style="background:#262638; color:#aaa;">+ Asignar</span>`;
+
+                html += `
+                    <div class="gift-option-row ${isSelected ? 'active-row' : ''}" onclick="toggleGift('${groupKey}', ${g.id})">
+                        <div class="gift-opt-left">
+                            <img src="${imgUrl}" class="gift-opt-img" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='${FALLBACK_ICON}'">
+                            <div style="min-width:0;">
+                                <div class="gift-opt-name">${g.name}</div>
+                                <div class="gift-opt-meta"><i class="fa-solid fa-coins"></i> ${g.diamonds} • ID: ${g.id}</div>
+                            </div>
+                        </div>
+                        ${badge}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html || `<div style="padding:10px; text-align:center; color:#777; font-size:12px;">Sin resultados</div>`;
+        }
+
+        function toggleGift(groupKey, id) {
+            const gift = globalGifts.find(g => Number(g.id) === Number(id));
+            if (!gift) return;
+
+            const toggleInArray = (arr) => {
+                const exists = arr.some(r => Number(r.id) === Number(id));
+                return exists ? arr.filter(r => Number(r.id) !== Number(id)) : [...arr, gift];
+            };
+
+            if (groupKey === 'u1') eq1GiftsUni = toggleInArray(eq1GiftsUni);
+            else if (groupKey === 'u2') eq2GiftsUni = toggleInArray(eq2GiftsUni);
+            else if (groupKey === 'su1') superEq1Gifts = toggleInArray(superEq1Gifts);
+            else if (groupKey === 'su2') superEq2Gifts = toggleInArray(superEq2Gifts);
+
+            renderAssignedLists();
+            renderAllPickers();
+            guardarConfig(true);
+        }
+
+        function renderAssignedLists() {
+            const pintar = (containerId, arr, groupKey, itemClass) => {
+                const el = document.getElementById(containerId);
+                el.innerHTML = '';
+                arr.forEach(g => {
+                    const imgUrl = obtenerImagenDeCatalogo(g);
+                    el.innerHTML += `
+                        <div class="${itemClass}">
+                            <img src="${imgUrl}" referrerpolicy="no-referrer" onerror="this.src='${FALLBACK_ICON}'">
+                            <span><b>${g.name}</b> (<i class="fa-solid fa-coins" style="color:#ffd700;"></i> ${g.diamonds})</span>
+                            <button class="btn-remove" onclick="toggleGift('${groupKey}', ${g.id})"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    `;
+                });
+            };
+
+            pintar('list-eq1-uni', eq1GiftsUni, 'u1', 'assigned-item');
+            pintar('list-eq2-uni', eq2GiftsUni, 'u2', 'assigned-item');
+            pintar('list-super-eq1', superEq1Gifts, 'su1', 'assigned-item-super');
+            pintar('list-super-eq2', superEq2Gifts, 'su2', 'assigned-item-super');
         }
 
         socket.on('config_actual', (config) => {
-            let uConf = config.unidades;
-            let needsAutoSave = false;
-
-            if(!uConf) {
-                needsAutoSave = true;
-                uConf = { equipo1: {}, equipo2: {}, enableCountdown: true, countdownSeconds: 60 };
-            }
-
-            if (!uConf.equipo1?.imgUnidad || uConf.equipo1.imgUnidad.trim() === "" || !uConf.equipo2?.imgUnidad || uConf.equipo2.imgUnidad.trim() === "") {
-                needsAutoSave = true;
-            }
-
+            let uConf = config.unidades || {};
             let sConf = uConf.superReset || {};
-            if (!sConf.imgSalvar || sConf.imgSalvar.trim() === "" || !sConf.imgSalvar2 || sConf.imgSalvar2.trim() === "") {
-                needsAutoSave = true;
-            }
 
+            document.getElementById('check-normal-enabled').checked = uConf.normalEnabled !== false;
             document.getElementById('input-countdown-sec').value = uConf.countdownSeconds || 60;
-            document.getElementById('check-countdown').checked = uConf.enableCountdown !== undefined ? uConf.enableCountdown : true;
+            document.getElementById('check-countdown').checked = uConf.enableCountdown !== false;
             
-            document.getElementById('eq1-nombre').value = uConf.equipo1?.nombre || "EQUIPO 1"; 
-            document.getElementById('eq1-sing').value = uConf.equipo1?.nombreSingular || "CAPIBARA"; 
-            document.getElementById('eq1-plur').value = uConf.equipo1?.nombrePlural || "CAPIBARAS"; 
-            document.getElementById('eq1-img').value = (uConf.equipo1?.imgUnidad && uConf.equipo1.imgUnidad.trim() !== "") ? uConf.equipo1.imgUnidad : DEFAULT_CAPIBARA_IMG; 
+            document.getElementById('eq1-nombre').value = uConf.equipo1?.nombre || "EQUIPO 1";
+            document.getElementById('eq1-action').value = uConf.equipo1?.actionText || "SALVAR";
+            document.getElementById('eq2-nombre').value = uConf.equipo2?.nombre || "EQUIPO 2";
+            document.getElementById('eq2-action').value = uConf.equipo2?.actionText || "RESET";
 
-            document.getElementById('eq2-nombre').value = uConf.equipo2?.nombre || "EQUIPO 2"; 
-            document.getElementById('eq2-sing').value = uConf.equipo2?.nombreSingular || "DONA"; 
-            document.getElementById('eq2-plur').value = uConf.equipo2?.nombrePlural || "DONAS"; 
-            document.getElementById('eq2-img').value = (uConf.equipo2?.imgUnidad && uConf.equipo2.imgUnidad.trim() !== "") ? uConf.equipo2.imgUnidad : DEFAULT_DONA_IMG; 
-            
-            let c1 = uConf.equipo1?.color || "#00ff66";
-            let c2 = uConf.equipo2?.color || "#ff003c";
-            document.getElementById('eq1-color').value = c1; document.getElementById('eq1-hex').value = c1.toUpperCase(); document.getElementById('lbl-eq1').style.color = c1;
-            document.getElementById('eq2-color').value = c2; document.getElementById('eq2-hex').value = c2.toUpperCase(); document.getElementById('lbl-eq2').style.color = c2;
-
-            document.getElementById('check-super-enabled').checked = sConf.enabled !== undefined ? sConf.enabled : true;
+            document.getElementById('check-super-enabled').checked = sConf.enabled !== false;
             document.getElementById('super-countdown-sec').value = sConf.countdownSeconds || 30;
             document.getElementById('super-custom-text').value = sConf.customText || "SALVAR";
-            document.getElementById('super-eq1-img').value = (sConf.imgSalvar && sConf.imgSalvar.trim() !== "") ? sConf.imgSalvar : DEFAULT_SANDIA_IMG;
-            document.getElementById('super-eq1-img2').value = (sConf.imgSalvar2 && sConf.imgSalvar2.trim() !== "") ? sConf.imgSalvar2 : DEFAULT_CORAL_IMG;
-            document.getElementById('super-display-mode').value = sConf.displayMode || "img1";
+            document.getElementById('super-display-mode').value = sConf.displayMode || "auto";
 
             if(uConf.battleStyle) {
                 document.getElementById('ds-font').value = uConf.battleStyle.fontFamily || "'Luckiest Guy', cursive";
                 document.getElementById('ds-stroke').value = uConf.battleStyle.textStroke || 2.5;
                 document.getElementById('ds-shadow-op').value = uConf.battleStyle.shadowOpacity !== undefined ? uConf.battleStyle.shadowOpacity : 0.85;
-                document.getElementById('ds-shadow-dist').value = uConf.battleStyle.shadowDistance !== undefined ? uConf.battleStyle.shadowDistance : 4;
                 document.getElementById('ds-super-scale').value = uConf.battleStyle.superScale || 100;
                 document.getElementById('ds-c1').value = uConf.battleStyle.colorL1 || "#ffea00";
                 document.getElementById('ds-s1').value = uConf.battleStyle.sizeL1 || 52;
@@ -428,12 +472,15 @@
             superEq1Gifts = sConf.regalosSalvar || [];
             superEq2Gifts = sConf.regalosReiniciar || [];
             
-            renderDropdowns();
-            renderListUni(1); renderListUni(2);
-            renderListSuper(1); renderListSuper(2);
+            renderAllPickers();
+            renderAssignedLists();
+        });
 
-            if (needsAutoSave) {
-                guardarConfig(true);
+        socket.on('catalogo_actualizado', (nuevoCat) => {
+            if (Array.isArray(nuevoCat)) {
+                globalGifts = nuevoCat;
+                renderAllPickers();
+                renderAssignedLists();
             }
         });
 
@@ -452,60 +499,16 @@
             socket.emit('modificar_puntos_super_unidades', { equipo: equipo, cantidad: cantidad });
         }
 
-        function modificarPuntosUnidades(equipo, accion) {
-            let inputId = equipo === 1 ? 'manual-pts-eq1-uni' : 'manual-pts-eq2-uni';
-            let pts = parseInt(document.getElementById(inputId).value);
-            if (isNaN(pts) || pts <= 0) return;
-            let cantidad = accion === 'sumar' ? pts : -pts;
-            socket.emit('modificar_puntos_unidades', { equipo: equipo, cantidad: cantidad });
-        }
-
         function resetearValores() {
-            if(confirm("🚨 ¿Estás seguro de reiniciar todos los puntos de unidades a cero?")) {
-                socket.emit('reset_unidades');
-            }
+            socket.emit('reset_unidades');
+            const btn = document.getElementById('btn-reset-all');
+            const prev = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Reiniciado!`;
+            setTimeout(() => btn.innerHTML = prev, 800);
         }
 
         function resetearSuperValores() {
             socket.emit('reset_super_unidades');
-        }
-
-        function renderListUni(team) {
-            let container = document.getElementById(team === 1 ? 'list-eq1-uni' : 'list-eq2-uni');
-            let arr = team === 1 ? eq1GiftsUni : eq2GiftsUni; container.innerHTML = '';
-            arr.forEach(g => { container.innerHTML += `<div class="assigned-item"><span>${g.name}</span><button class="btn-remove" onclick="removeGiftUni(${team},${g.id})"><i class="fa-solid fa-xmark"></i></button></div>`; });
-        }
-
-        function addGiftUnidades(team) {
-            let sel = document.getElementById(team === 1 ? 'select-eq1-uni' : 'select-eq2-uni');
-            if(!sel.value) return;
-            let gift = globalGifts.find(g => g.id === parseInt(sel.value));
-            let arr = team === 1 ? eq1GiftsUni : eq2GiftsUni;
-            if (!arr.some(g => g.id === gift.id)) { arr.push(gift); renderListUni(team); renderDropdowns(); guardarConfig(true); }
-        }
-
-        function removeGiftUni(team, id) {
-            if (team === 1) eq1GiftsUni = eq1GiftsUni.filter(g => g.id !== id); else eq2GiftsUni = eq2GiftsUni.filter(g => g.id !== id);
-            renderListUni(team); renderDropdowns(); guardarConfig(true); 
-        }
-
-        function renderListSuper(team) {
-            let container = document.getElementById(team === 1 ? 'list-super-eq1' : 'list-super-eq2');
-            let arr = team === 1 ? superEq1Gifts : superEq2Gifts; container.innerHTML = '';
-            arr.forEach(g => { container.innerHTML += `<div class="assigned-item-super"><span>⚡ ${g.name}</span><button class="btn-remove" onclick="removeGiftSuper(${team},${g.id})"><i class="fa-solid fa-xmark"></i></button></div>`; });
-        }
-
-        function addGiftSuper(team) {
-            let sel = document.getElementById(team === 1 ? 'select-super-eq1' : 'select-super-eq2');
-            if(!sel.value) return;
-            let gift = globalGifts.find(g => g.id === parseInt(sel.value));
-            let arr = team === 1 ? superEq1Gifts : superEq2Gifts;
-            if (!arr.some(g => g.id === gift.id)) { arr.push(gift); renderListSuper(team); renderDropdowns(); guardarConfig(true); }
-        }
-
-        function removeGiftSuper(team, id) {
-            if (team === 1) superEq1Gifts = superEq1Gifts.filter(g => g.id !== id); else superEq2Gifts = superEq2Gifts.filter(g => g.id !== id);
-            renderListSuper(team); renderDropdowns(); guardarConfig(true); 
         }
 
         function guardarConfig(isSilent = false) {
@@ -513,7 +516,7 @@
                 fontFamily: document.getElementById('ds-font').value,
                 textStroke: parseFloat(document.getElementById('ds-stroke').value) || 2.5,
                 shadowOpacity: parseFloat(document.getElementById('ds-shadow-op').value),
-                shadowDistance: parseInt(document.getElementById('ds-shadow-dist').value) || 4,
+                shadowDistance: 4,
                 superScale: parseInt(document.getElementById('ds-super-scale').value) || 100,
                 colorL1: document.getElementById('ds-c1').value,
                 sizeL1: parseInt(document.getElementById('ds-s1').value) || 52,
@@ -523,25 +526,27 @@
                 sizeTimer: parseInt(document.getElementById('ds-st').value) || 82
             };
 
-            let c1 = document.getElementById('eq1-hex').value;
-            let c2 = document.getElementById('eq2-hex').value;
-            let img1Val = document.getElementById('eq1-img').value.trim() || DEFAULT_CAPIBARA_IMG;
-            let img2Val = document.getElementById('eq2-img').value.trim() || DEFAULT_DONA_IMG;
-            let imgSuperSalvarVal = document.getElementById('super-eq1-img').value.trim() || DEFAULT_SANDIA_IMG;
-            let imgSuperSalvarVal2 = document.getElementById('super-eq1-img2').value.trim() || DEFAULT_CORAL_IMG;
-
             let configUnidades = {
-                equipo1: { nombre: document.getElementById('eq1-nombre').value.trim(), nombreSingular: document.getElementById('eq1-sing').value.trim(), nombrePlural: document.getElementById('eq1-plur').value.trim(), color: c1, imgUnidad: img1Val, regalos: eq1GiftsUni },
-                equipo2: { nombre: document.getElementById('eq2-nombre').value.trim(), nombreSingular: document.getElementById('eq2-sing').value.trim(), nombrePlural: document.getElementById('eq2-plur').value.trim(), color: c2, imgUnidad: img2Val, regalos: eq2GiftsUni },
+                normalEnabled: document.getElementById('check-normal-enabled').checked,
+                equipo1: {
+                    nombre: document.getElementById('eq1-nombre').value.trim() || "EQUIPO 1",
+                    actionText: document.getElementById('eq1-action').value.trim() || "SALVAR",
+                    color: "#00ff66",
+                    regalos: eq1GiftsUni
+                },
+                equipo2: {
+                    nombre: document.getElementById('eq2-nombre').value.trim() || "EQUIPO 2",
+                    actionText: document.getElementById('eq2-action').value.trim() || "RESET",
+                    color: "#ff003c",
+                    regalos: eq2GiftsUni
+                },
                 enableCountdown: document.getElementById('check-countdown').checked, 
                 countdownSeconds: parseInt(document.getElementById('input-countdown-sec').value) || 60,
                 superReset: {
                     enabled: document.getElementById('check-super-enabled').checked,
                     countdownSeconds: parseInt(document.getElementById('super-countdown-sec').value) || 30,
                     customText: document.getElementById('super-custom-text').value.trim() || "SALVAR",
-                    imgSalvar: imgSuperSalvarVal,
-                    imgSalvar2: imgSuperSalvarVal2,
-                    displayMode: document.getElementById('super-display-mode').value || "img1",
+                    displayMode: document.getElementById('super-display-mode').value || "auto",
                     regalosSalvar: superEq1Gifts,
                     regalosReiniciar: superEq2Gifts
                 },
@@ -558,7 +563,7 @@
 
         function copiarURL(path) {
             navigator.clipboard.writeText(window.location.origin + path);
-            alert("✅ Enlace copiado: " + window.location.origin + path + "\n\nPégalo como Navegador en OBS.");
+            alert("✅ Enlace copiado: " + window.location.origin + path);
         }
     </script>
 </body>

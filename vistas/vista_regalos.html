@@ -5,8 +5,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; }
-        .box { background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-width: 900px; margin-bottom: 30px;}
-        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
+        .box { background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-width: 950px; margin-bottom: 30px;}
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
         
         .btn-import { background: #ff0050; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;}
         .btn-import:hover { background: #ff3370; }
@@ -14,28 +14,37 @@
         .btn-export { background: #00f2fe; color: black; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;}
         .btn-export:hover { background: #4facfe; }
 
-        .table-container { max-height: 450px; overflow-y: auto; border: 1px solid #333; border-radius: 8px; }
+        .sync-banner { background: #121d24; border: 1px solid #00f2fe; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .btn-sync-scan { background: #00f2fe; color: #000; border: none; padding: 12px 18px; border-radius: 8px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-sync-save { background: #00ff66; color: #000; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,255,102,0.3); }
+
+        .filter-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .search-bar { flex: 1; min-width: 240px; background: #000; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 11px 14px; font-size: 14px; box-sizing: border-box; }
+        .search-bar:focus { outline: none; border-color: #00f2fe; }
+        .sort-select { background: #111; color: #00f2fe; border: 1px solid #444; border-radius: 8px; padding: 0 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
+
+        .table-container { max-height: 520px; overflow-y: auto; border: 1px solid #333; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; text-align: left; background: #111; }
         th { background: #222; padding: 12px; position: sticky; top: 0; border-bottom: 2px solid #444; color: #ccc; z-index: 2; }
-        td { padding: 12px; border-bottom: 1px solid #222; font-size: 14px; vertical-align: middle;}
+        td { padding: 10px 12px; border-bottom: 1px solid #222; font-size: 14px; vertical-align: middle;}
         
-        .manual-form { background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px;}
-        .manual-col { flex: 1; }
-        .manual-col label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; color: #00f2fe;}
+        .manual-form { background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;}
+        .manual-col { flex: 1; min-width: 140px; }
+        .manual-col label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; color: #00f2fe;}
         .manual-col input { width: 100%; background: #000; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 10px; font-size: 14px; box-sizing: border-box; }
         .manual-col input:focus { outline: none; border-color: #00f2fe; }
         .btn-manual { background: #00f2fe; color: black; font-weight: bold; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; transition: 0.2s; white-space: nowrap;}
         .btn-manual:hover { background: #4facfe; }
 
         .img-preview { width: 45px; height: 45px; object-fit: contain; border-radius: 8px; background: #000; border: 1px solid #444; padding: 2px;}
-        .no-img { width: 45px; height: 45px; background: #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 18px; border: 1px solid #444; }
+        .no-img { width: 45px; height: 45px; background: #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 18px; border: 1px solid #444; margin: 0 auto; }
     </style>
 </head>
 <body>
     
     <div class="box">
         <div class="top-row">
-            <h2 style="margin:0;"><i class="fa-solid fa-gift"></i> Catálogo Maestro de Regalos</h2>
+            <h2 style="margin:0;"><i class="fa-solid fa-gift"></i> Catálogo Maestro de Regalos (<span id="total-db-count">0</span>)</h2>
             <div style="display: flex; gap: 10px;">
                 <button class="btn-export" onclick="exportarCatalogo()"><i class="fa-solid fa-file-export"></i> Exportar Catálogo JSON</button>
                 <input type="file" id="file-import-catalogo" accept=".json" style="display:none;" onchange="manejarArchivoCatalogo(event)">
@@ -43,9 +52,24 @@
             </div>
         </div>
 
-        <p style="font-size: 13px; color: #aaa; margin-top: -15px; margin-bottom: 20px;">
-            El sistema está programado para reemplazar imágenes falsas o vacías por las oficiales de TikTok apenas alguien envíe el regalo en el Live. Las actualizaciones son silenciosas.
-        </p>
+        <div class="sync-banner">
+            <div>
+                <div style="font-weight: 800; color: #00f2fe; font-size: 15px;">
+                    <i class="fa-solid fa-bolt"></i> Sincronización Automática con Cuenta de TikTok
+                </div>
+                <div style="font-size: 12.5px; color: #bbb; margin-top: 4px;" id="sync-status-text">
+                    Conéctate a tu cuenta para cargar todos los regalos disponibles y guardarlos de golpe con sus imágenes.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-sync-scan" onclick="escanearCuenta()">
+                    <i class="fa-solid fa-rotate"></i> Cargar Regalos de mi Cuenta
+                </button>
+                <button class="btn-sync-save" id="btn-guardar-todos" onclick="guardarDetectados()">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Todos en Base de Datos (<span id="badge-detectados">0</span>)
+                </button>
+            </div>
+        </div>
 
         <div class="manual-form">
             <div class="manual-col">
@@ -61,6 +85,15 @@
                 <input type="number" id="manual-price" placeholder="Ej. 1">
             </div>
             <button class="btn-manual" onclick="agregarManual()"><i class="fa-solid fa-plus"></i> Añadir Manual</button>
+        </div>
+
+        <div class="filter-row">
+            <input type="text" id="input-buscador" class="search-bar" placeholder="🔍 Buscar regalo por nombre (ej. Lion, Rose, GG), ID o monedas..." oninput="renderizarTabla()">
+            <select id="select-orden" class="sort-select" onchange="renderizarTabla()">
+                <option value="asc">💰 Menor a Mayor Precio (1 moneda arriba)</option>
+                <option value="desc">🦁 Mayor a Menor Precio (León / Caros arriba)</option>
+                <option value="name">🔤 Orden Alfabético (A - Z)</option>
+            </select>
         </div>
 
         <div class="table-container">
@@ -83,23 +116,59 @@
     <script>
         const socket = io();
         let catalogoActual = []; 
+        let detectadosTemporal = [];
 
-        socket.on('config_actual', (config) => {
-            catalogoActual = config.regalosDisponibles || [];
-            let tbody = document.getElementById('tabla-regalos'); 
-            tbody.innerHTML = '';
-            
-            catalogoActual.forEach(g => {
-                let imgRender = "";
-                let isFake = !g.image || g.image.includes('via.placeholder.com') || g.image.trim() === "";
-                
-                if (isFake) {
-                    imgRender = `<div class="no-img" title="Falta foto oficial"><i class="fa-solid fa-image"></i></div>`;
+        function fusionarListasVisualmente(base, detectados) {
+            const mapa = new Map();
+            (base || []).forEach(g => {
+                if (g && g.id) mapa.set(Number(g.id), { ...g });
+            });
+            (detectados || []).forEach(d => {
+                if (!d || !d.id) return;
+                const id = Number(d.id);
+                const prev = mapa.get(id);
+                if (!prev) {
+                    mapa.set(id, { ...d });
                 } else {
-                    imgRender = `<img src="${g.image}" class="img-preview">`;
+                    prev.name = d.name || prev.name;
+                    prev.diamonds = d.diamonds || prev.diamonds;
+                    if (d.image && d.image.trim() !== "") prev.image = d.image;
+                }
+            });
+            return Array.from(mapa.values());
+        }
+
+        function renderizarTabla() {
+            let filtro = (document.getElementById('input-buscador').value || "").toLowerCase().trim();
+            let orden = document.getElementById('select-orden').value;
+            let tbody = document.getElementById('tabla-regalos'); 
+            
+            // Mostramos tanto los del catálogo guardado como los recién detectados en vivo
+            let listaCompleta = fusionarListasVisualmente(catalogoActual, detectadosTemporal);
+
+            if (orden === 'desc') {
+                listaCompleta.sort((a, b) => (b.diamonds - a.diamonds) || (a.id - b.id));
+            } else if (orden === 'name') {
+                listaCompleta.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            } else {
+                listaCompleta.sort((a, b) => (a.diamonds - b.diamonds) || (a.id - b.id));
+            }
+
+            document.getElementById('total-db-count').innerText = listaCompleta.length;
+            
+            let filasHTML = '';
+            listaCompleta.forEach(g => {
+                if (filtro) {
+                    let coincide = String(g.id).includes(filtro) || (g.name && g.name.toLowerCase().includes(filtro)) || String(g.diamonds) === filtro;
+                    if (!coincide) return;
                 }
 
-                tbody.innerHTML += `
+                let isFake = !g.image || g.image.includes('via.placeholder.com') || g.image.trim() === "";
+                let imgRender = isFake
+                    ? `<div class="no-img" title="Sin imagen"><i class="fa-solid fa-image"></i></div>`
+                    : `<img src="${g.image}" class="img-preview" referrerpolicy="no-referrer" loading="lazy" onerror="this.outerHTML='<div class=\\'no-img\\'><i class=\\'fa-solid fa-image\\'></i></div>'">`;
+
+                filasHTML += `
                     <tr>
                         <td style="text-align: center;">${imgRender}</td>
                         <td style="color:#aaa; font-family:monospace; font-weight: bold;">${g.id}</td>
@@ -108,7 +177,44 @@
                         <td style="text-align: center;"><button onclick="eliminarCatalogo(${g.id})" style="background:none; color:#ff003c; border:none; cursor:pointer; font-size: 16px;"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>`;
             });
+
+            tbody.innerHTML = filasHTML;
+        }
+
+        socket.on('config_actual', (config) => {
+            if (config && Array.isArray(config.regalosDisponibles)) {
+                catalogoActual = config.regalosDisponibles;
+                renderizarTabla();
+            }
         });
+
+        socket.on('catalogo_actualizado', (nuevoCatalogo) => {
+            if (Array.isArray(nuevoCatalogo)) {
+                catalogoActual = nuevoCatalogo;
+                renderizarTabla();
+            }
+        });
+
+        socket.on('regalos_cuenta_detectados', (data) => {
+            detectadosTemporal = data.regalos || [];
+            document.getElementById('badge-detectados').innerText = detectadosTemporal.length;
+            document.getElementById('sync-status-text').innerHTML = `<span style="color:#00ff66; font-weight:bold;">✅ ¡${detectadosTemporal.length} regalos cargados y mostrados en la lista de @${data.cuenta || 'TikTok'}!</span>`;
+            renderizarTabla();
+        });
+
+        socket.on('resultado_guardar_regalos', (res) => {
+            document.getElementById('sync-status-text').innerHTML = `<span style="color:${res.ok ? '#00ff66' : '#ffaa00'}; font-weight:bold;">${res.msg}</span>`;
+            renderizarTabla();
+        });
+
+        function escanearCuenta() {
+            document.getElementById('sync-status-text').innerText = "⏳ Consultando catálogo completo de regalos en TikTok...";
+            socket.emit('escanear_regalos_tiktok');
+        }
+
+        function guardarDetectados() {
+            socket.emit('guardar_regalos_detectados', detectadosTemporal);
+        }
 
         function agregarManual() {
             let id = parseInt(document.getElementById('manual-id').value);
@@ -123,8 +229,9 @@
         function eliminarCatalogo(id) { if(confirm("¿Eliminar regalo de la base de datos?")) socket.emit('eliminar_regalo_catalogo', id); }
 
         function exportarCatalogo() {
-            if (catalogoActual.length === 0) { alert("⚠️ El catálogo está vacío."); return; }
-            const dataStr = JSON.stringify(catalogoActual, null, 4);
+            let listaExportar = fusionarListasVisualmente(catalogoActual, detectadosTemporal);
+            if (listaExportar.length === 0) { alert("⚠️ El catálogo está vacío."); return; }
+            const dataStr = JSON.stringify(listaExportar, null, 4);
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a"); a.href = url; a.download = "catalogo_regalos.json";

@@ -1,8 +1,9 @@
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
-const io = require('socket.io')(http, { cors: { origin: "*" } });
+const io = require('socket.io')(http, { cors: { origin: "*" }, maxHttpBufferSize: 1e8 });
 const { WebcastPushConnection } = require('tiktok-live-connector');
+const https = require('https');
 const fs = require('fs'); 
 const path = require('path'); 
 const setupGameEvents = require('./gameEvents'); 
@@ -24,10 +25,9 @@ app.get('/vista_top_donadores', (req, res) => res.sendFile(path.join(__dirname, 
 app.get('/vista_backup', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_backup.html')));
 app.get('/vista_sociales', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_sociales.html')));
 app.get('/vista_wins_ruleta', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_wins_ruleta.html')));
-
 app.get('/vista_salon_fama', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_salon_fama.html')));
-app.get('/salon_fama', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'salon_fama.html')));
 
+app.get('/salon_fama', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'salon_fama.html')));
 app.get('/versus', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'versus.html'))); 
 app.get('/versus_unidades', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'versus_unidades.html'))); 
 app.get('/pop_regalos', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'pop_regalos.html'))); 
@@ -35,66 +35,75 @@ app.get('/racha_versus', (req, res) => res.sendFile(path.join(__dirname, 'overla
 app.get('/meta_likes', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'meta_likes.html')));
 app.get('/top_likes', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'top_likes.html')));
 app.get('/top_donadores', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'top_donadores.html')));
-
-// 🌟 NUEVA RUTA: OVERLAY DE TOP GUERREROS
 app.get('/top_guerreros', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'top_guerreros.html')));
-
 app.get('/ultimo_seguidor', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'ultimo_seguidor.html')));
 app.get('/ultimo_quiereme', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'ultimo_quiereme.html')));
 app.get('/wins_ruleta', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'wins_ruleta.html')));
 
-const DEFAULT_CAPIBARA_IMG = "https://i.imgur.com/OdX4lkD.png";
-const DEFAULT_DONA_IMG = "https://i.imgur.com/Wwy2Kzf.png";
-const DEFAULT_SANDIA_IMG = "https://i.imgur.com/ssCEDme.png";
-const DEFAULT_CORAL_IMG = "https://i.imgur.com/7982rrb.png";
-
-let topDonators = {};
-let topSorted = [];
+// Variables 100% en RAM (Nunca ensucian ni inflan data.json)
+let topLikesMemoryRound = {}; 
+let topVIPMemoryRound = {};
 let teamSalvar = { total: 0, donators: {} };
 let teamReiniciar = { total: 0, donators: {} };
 
-// Unidades Normales (Capibara vs Dona)
+// Unidades Normales y Súper Unidades en RAM
 let teamSalvarUnidades = { total: 0 };
 let teamReiniciarUnidades = { total: 0 };
 let lastDonatorSalvarUnid = { name: 'ESPERANDO', avatar: '' };
 let lastDonatorReiniciarUnid = { name: 'ESPERANDO', avatar: '' };
 
-// ⚡ Súper Unidades (Sandía / Coral vs Galaxia - Prioridad)
 let teamSuperSalvarUnidades = { total: 0 };
 let teamSuperReiniciarUnidades = { total: 0 };
 let lastDonatorSuperSalvar = { name: 'ESPERANDO', avatar: '' };
 let lastDonatorSuperReiniciar = { name: 'ESPERANDO', avatar: '' };
 
 let catalogoGlobal = [];
+let regalosDetectadosCuenta = [];
+let currentRoomId = null;
 let currentTotalLikes = 0; 
 let userTeams = {}; 
 
-let ultimoSeguidorData = { name: "ESPERANDO...", avatar: "https://via.placeholder.com/150/222/fff?text=?" };
-let ultimoQuieremeData = { name: "ESPERANDO...", avatar: "https://via.placeholder.com/150/222/fff?text=?" };
+let ultimoSeguidorData = { name: "ESPERANDO...", avatar: "" };
+let ultimoQuieremeData = { name: "ESPERANDO...", avatar: "" };
 let recentFollowers = new Set(); 
 
 let estadoWins = { actuales: 0, meta: 5 };
 const ruletaSpunUsers = new Set();
 const processedSpins = new Set(); 
 
-const regalosEq1Defecto = [{ id: 6064, name: "GG", diamonds: 1 }, { id: 9947, name: "BFF Necklace", diamonds: 10 }];
-const regalosEq2Defecto = [{ id: 5655, name: "Rose", diamonds: 1 }, { id: 8913, name: "Rosa", diamonds: 10 }];
+const regalosEq1Defecto = [{ id: 6064, name: "GG", diamonds: 1, image: "" }];
+const regalosEq2Defecto = [{ id: 5655, name: "Rose", diamonds: 1, image: "" }];
 
 let configGlobal = {
-    username: "", historial: [],
-    equipo1: { nombre: "SALVAR", sub: "GG", color: "#00ff66", regalos: regalosEq1Defecto, joinWords: "chicos, heroes, salvar, 1" },
-    equipo2: { nombre: "REINICIAR", sub: "ROSA", color: "#ff003c", regalos: regalosEq2Defecto, joinWords: "chicas, villanos, reiniciar, 2" },
+    username: "",
+    historial: [],
+    hidePowerBar: true,
+    equipo1: { nombre: "SALVAR", sub: "SALVAR", color: "#00ff66", regalos: regalosEq1Defecto, joinWords: "chicos, heroes, salvar, 1" },
+    equipo2: { nombre: "REINICIAR", sub: "RESET", color: "#ff003c", regalos: regalosEq2Defecto, joinWords: "chicas, villanos, reiniciar, 2" },
+    battleStyle: {
+        fontFamily: "'Luckiest Guy', cursive",
+        textStroke: 1.5,
+        shadowOpacity: 1.0,
+        shadowDistance: 4,
+        colorL1: "#ff5e5e",
+        sizeL1: 46,
+        colorL2: "#ff003c",
+        sizeL2: 45,
+        colorTimer: "#ffffff",
+        sizeTimer: 92,
+        hidePowerBar: true
+    },
     unidades: {
-        equipo1: { nombre: "EQUIPO 1", nombreSingular: "CAPIBARA", nombrePlural: "CAPIBARAS", color: "#00ff66", imgUnidad: DEFAULT_CAPIBARA_IMG, regalos: [] },
-        equipo2: { nombre: "EQUIPO 2", nombreSingular: "DONA", nombrePlural: "DONAS", color: "#ff003c", imgUnidad: DEFAULT_DONA_IMG, regalos: [] },
-        enableCountdown: true, countdownSeconds: 60,
+        normalEnabled: true,
+        equipo1: { nombre: "EQUIPO 1", actionText: "SALVAR", color: "#00ff66", regalos: [] },
+        equipo2: { nombre: "EQUIPO 2", actionText: "RESET", color: "#ff003c", regalos: [] },
+        enableCountdown: true,
+        countdownSeconds: 60,
         superReset: {
             enabled: true,
             countdownSeconds: 30,
             customText: "SALVAR",
-            imgSalvar: DEFAULT_SANDIA_IMG,
-            imgSalvar2: DEFAULT_CORAL_IMG,
-            displayMode: "img1", // "img1" (Sandía), "img2" (Coral), o "both" (Ambos)
+            displayMode: "auto",
             regalosSalvar: [],
             regalosReiniciar: []
         },
@@ -112,17 +121,22 @@ let configGlobal = {
             superScale: 100
         }
     },
-    enableCountdown: true, countdownSeconds: 30, showTopText: true, showDonatorCoins: true,
-    showEmoticons: true, roundGifts: true, showTopDonators: true,
+    enableCountdown: true,
+    countdownSeconds: 30,
+    showTopText: false,
+    showDonatorCoins: true,
+    showEmoticons: true,
+    roundGifts: true,
+    showTopDonators: true,
     regalosDisponibles: [],
-    rachaVersus: { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, continuousMode: true },
+    rachaVersus: { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, mirrorMode: false },
     bolita: { multiplicador: 2, chatWord: "globos, jugar", chatGlobos: 1, chatCooldown: 60, likesMeta: 50, likesGlobos: 1, followGlobos: 5, followCooldown: 300, allowFree: true, quiereMeGlobos: 60 },
     metaLikes: { active: false, firstGoal: 0, step: 20000, prefixText: "A los", actionText: "REINICIO", currentGoal: 20000, style: { fontSize: 45, color: "#ffffff", shadowColor: "#ff003c", fontFamily: "'Luckiest Guy', cursive" } },
-    topLikes: { currentRound: {}, mirrorMode: false },
-    topVIP: { currentRound: {}, recordHistorico: {}, displayLimit: 2, mirrorMode: false },
+    topLikes: { mirrorMode: false, keepOnGlobalClose: false },
+    topVIP: { recordHistorico: {}, displayLimit: 2, mirrorMode: false },
     sociales: { followRequiresChat: false, followChatWord: "yo" },
     winsRuleta: { regalosSumar: [], regalosRestar: [], cooldown: 3600, probabilidad: 50 },
-    salonFama: { record: {}, displayLimit: 5, alignment: 'left' }
+    salonFama: { record: {}, displayLimit: 5, alignment: 'left', minCoins: 10 }
 };
 
 if (fs.existsSync(pathData)) {
@@ -130,103 +144,268 @@ if (fs.existsSync(pathData)) {
         let guardado = JSON.parse(fs.readFileSync(pathData, 'utf8')); 
         configGlobal = { ...configGlobal, ...guardado };
 
-        if(!configGlobal.equipo1.joinWords) configGlobal.equipo1.joinWords = "chicos, heroes, salvar, 1";
-        if(!configGlobal.equipo2.joinWords) configGlobal.equipo2.joinWords = "chicas, villanos, reiniciar, 2";
-        
-        if(!configGlobal.unidades.equipo1.imgUnidad || configGlobal.unidades.equipo1.imgUnidad.trim() === "") {
-            configGlobal.unidades.equipo1.imgUnidad = DEFAULT_CAPIBARA_IMG;
+        // Eliminar basura antigua de racha o likes guardados en disco
+        delete configGlobal.racha;
+        if (configGlobal.topLikes) {
+            delete configGlobal.topLikes.currentRound;
+            if (configGlobal.topLikes.keepOnGlobalClose === undefined) configGlobal.topLikes.keepOnGlobalClose = false;
         }
-        if(!configGlobal.unidades.equipo2.imgUnidad || configGlobal.unidades.equipo2.imgUnidad.trim() === "") {
-            configGlobal.unidades.equipo2.imgUnidad = DEFAULT_DONA_IMG;
-        }
-
-        if(!configGlobal.unidades.superReset) {
-            configGlobal.unidades.superReset = {
-                enabled: true,
-                countdownSeconds: 30,
-                customText: "SALVAR",
-                imgSalvar: DEFAULT_SANDIA_IMG,
-                imgSalvar2: DEFAULT_CORAL_IMG,
-                displayMode: "img1",
-                regalosSalvar: [],
-                regalosReiniciar: []
-            };
-        } else {
-            if (!configGlobal.unidades.superReset.imgSalvar || configGlobal.unidades.superReset.imgSalvar.trim() === "") {
-                configGlobal.unidades.superReset.imgSalvar = DEFAULT_SANDIA_IMG;
+        if (configGlobal.topVIP) {
+            delete configGlobal.topVIP.currentRound;
+            let limpios = {};
+            for (const [k, v] of Object.entries(configGlobal.topVIP.recordHistorico || {})) {
+                if (v && (v.wins > 0 || v.streak > 0)) limpios[k] = v;
             }
-            if (!configGlobal.unidades.superReset.imgSalvar2 || configGlobal.unidades.superReset.imgSalvar2.trim() === "") {
-                configGlobal.unidades.superReset.imgSalvar2 = DEFAULT_CORAL_IMG;
-            }
-            if (!configGlobal.unidades.superReset.displayMode) {
-                configGlobal.unidades.superReset.displayMode = "img1";
-            }
-            if (!configGlobal.unidades.superReset.customText || configGlobal.unidades.superReset.customText === "SALVAR INSTANTÁNEAMENTE") {
-                configGlobal.unidades.superReset.customText = "SALVAR";
-            }
-            if (!configGlobal.unidades.superReset.countdownSeconds || configGlobal.unidades.superReset.countdownSeconds === 10) {
-                configGlobal.unidades.superReset.countdownSeconds = 30;
-            }
+            configGlobal.topVIP.recordHistorico = limpios;
         }
+        if (!configGlobal.salonFama) configGlobal.salonFama = { record: {}, displayLimit: 5, alignment: 'left', minCoins: 10 };
+        if (configGlobal.salonFama.minCoins === undefined) configGlobal.salonFama.minCoins = 10;
 
-        if (configGlobal.unidades.battleStyle && configGlobal.unidades.battleStyle.superScale === undefined) {
-            configGlobal.unidades.battleStyle.superScale = 100;
-        }
-
-        if(!configGlobal.rachaVersus) configGlobal.rachaVersus = { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, continuousMode: true };
-        if(configGlobal.rachaVersus.continuousMode === undefined) configGlobal.rachaVersus.continuousMode = true;
-        if(!configGlobal.bolita) configGlobal.bolita = { multiplicador: 2, chatWord: "globos, jugar", chatGlobos: 1, chatCooldown: 60, likesMeta: 50, likesGlobos: 1, followGlobos: 5, followCooldown: 300, allowFree: true, quiereMeGlobos: 60 };
-        if(!configGlobal.metaLikes) configGlobal.metaLikes = { active: false, firstGoal: 0, step: 20000, prefixText: "A los", actionText: "REINICIO", currentGoal: 20000, style: { fontSize: 45, color: "#ffffff", shadowColor: "#ff003c", fontFamily: "'Luckiest Guy', cursive" } };
-        
-        if(!configGlobal.topLikes) configGlobal.topLikes = { currentRound: {}, mirrorMode: false };
-        if(configGlobal.topLikes.mirrorMode === undefined) configGlobal.topLikes.mirrorMode = false;
-        
-        if(!configGlobal.topVIP) configGlobal.topVIP = { currentRound: {}, recordHistorico: {}, displayLimit: 2, mirrorMode: false };
-        if(!configGlobal.topVIP.displayLimit) configGlobal.topVIP.displayLimit = 2; 
-        if(configGlobal.topVIP.mirrorMode === undefined) configGlobal.topVIP.mirrorMode = false;
-        if(!configGlobal.sociales) configGlobal.sociales = { followRequiresChat: false, followChatWord: "yo" };
-        
-        if(!configGlobal.winsRuleta) {
-            configGlobal.winsRuleta = { regalosSumar: [], regalosRestar: [], cooldown: 3600, probabilidad: 50 };
-        } else {
-            if (configGlobal.winsRuleta.cooldown === undefined) configGlobal.winsRuleta.cooldown = 3600;
-            if (configGlobal.winsRuleta.probabilidad === undefined) configGlobal.winsRuleta.probabilidad = 50;
-        }
-
-        if(!configGlobal.salonFama) {
-            configGlobal.salonFama = { record: {}, displayLimit: 5, alignment: 'left' };
-        } else {
-            if (configGlobal.salonFama.displayLimit === undefined) configGlobal.salonFama.displayLimit = 5;
-            if (configGlobal.salonFama.alignment === undefined) configGlobal.salonFama.alignment = 'left';
-        }
-
+        if (!configGlobal.rachaVersus) configGlobal.rachaVersus = { salvadas: {}, reinicios: {}, showName: true, showCount: true, showCoins: true, mirrorMode: false };
+        if (configGlobal.rachaVersus.mirrorMode === undefined) configGlobal.rachaVersus.mirrorMode = false;
     } catch (e) {}
 }
 
-if (fs.existsSync(pathCatalogo)) { try { catalogoGlobal = JSON.parse(fs.readFileSync(pathCatalogo, 'utf8')); } catch (e) {} }
-if (catalogoGlobal.length === 0) {
+if (fs.existsSync(pathCatalogo)) {
+    try { catalogoGlobal = JSON.parse(fs.readFileSync(pathCatalogo, 'utf8')); } catch (e) {}
+}
+if (!Array.isArray(catalogoGlobal) || catalogoGlobal.length === 0) {
     catalogoGlobal = [...regalosEq1Defecto, ...regalosEq2Defecto].sort((a, b) => a.diamonds - b.diamonds);
-    fs.writeFileSync(pathCatalogo, JSON.stringify(catalogoGlobal, null, 4));
 }
 configGlobal.regalosDisponibles = catalogoGlobal;
-guardarEnArchivo();
 
-function guardarEnArchivo() { 
-    try { fs.writeFileSync(pathData, JSON.stringify(configGlobal, null, 4)); fs.writeFileSync(pathCatalogo, JSON.stringify(catalogoGlobal, null, 4)); } catch (err) {}
+let saveTimeout = null;
+function guardarEnArchivo(inmediato = false) {
+    const escribir = () => {
+        try {
+            // Clon ligero sin meter el catálogo gigante ni rondas temporales dentro de data.json
+            const dataToSave = { ...configGlobal };
+            delete dataToSave.regalosDisponibles;
+            if (dataToSave.topLikes) delete dataToSave.topLikes.currentRound;
+            if (dataToSave.topVIP) delete dataToSave.topVIP.currentRound;
+
+            fs.writeFileSync(pathData, JSON.stringify(dataToSave, null, 2));
+            fs.writeFileSync(pathCatalogo, JSON.stringify(catalogoGlobal, null, 2));
+        } catch (err) {}
+    };
+    if (inmediato) {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        escribir();
+    } else {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(escribir, 800);
+    }
 }
 
-function cerrarRondasGlobales() {
-    let seCerroAlgo = false;
+function getTopLikesPayload() {
+    return {
+        currentRound: topLikesMemoryRound,
+        mirrorMode: configGlobal.topLikes?.mirrorMode || false,
+        keepOnGlobalClose: configGlobal.topLikes?.keepOnGlobalClose || false
+    };
+}
 
-    if (Object.keys(configGlobal.topLikes.currentRound).length > 0) {
-        configGlobal.topLikes.currentRound = {}; 
-        seCerroAlgo = true;
+function getTopVIPPayload() {
+    return {
+        currentRound: topVIPMemoryRound,
+        recordHistorico: configGlobal.topVIP?.recordHistorico || {},
+        displayLimit: configGlobal.topVIP?.displayLimit || 2,
+        mirrorMode: configGlobal.topVIP?.mirrorMode || false
+    };
+}
+
+function sincronizarImagenesAsignadas() {
+    const mapaCatalogo = new Map(catalogoGlobal.map(g => [Number(g.id), g]));
+    const actualizarLista = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(item => {
+            const encontrado = mapaCatalogo.get(Number(item.id));
+            if (encontrado) {
+                if (encontrado.image && encontrado.image.trim() !== "") item.image = encontrado.image;
+                item.name = encontrado.name || item.name;
+                item.diamonds = encontrado.diamonds || item.diamonds;
+            }
+        });
+    };
+
+    if (configGlobal.equipo1) actualizarLista(configGlobal.equipo1.regalos);
+    if (configGlobal.equipo2) actualizarLista(configGlobal.equipo2.regalos);
+    if (configGlobal.unidades) {
+        if (configGlobal.unidades.equipo1) actualizarLista(configGlobal.unidades.equipo1.regalos);
+        if (configGlobal.unidades.equipo2) actualizarLista(configGlobal.unidades.equipo2.regalos);
+        if (configGlobal.unidades.superReset) {
+            actualizarLista(configGlobal.unidades.superReset.regalosSalvar);
+            actualizarLista(configGlobal.unidades.superReset.regalosReiniciar);
+        }
+    }
+    if (configGlobal.winsRuleta) {
+        actualizarLista(configGlobal.winsRuleta.regalosSumar);
+        actualizarLista(configGlobal.winsRuleta.regalosRestar);
+    }
+}
+
+sincronizarImagenesAsignadas();
+guardarEnArchivo(true);
+
+function fetchRegalosDirectoAPI(roomId) {
+    return new Promise((resolve) => {
+        const roomParam = roomId ? `&room_id=${roomId}` : '';
+        const url = `https://webcast.tiktok.com/webcast/gift/list/?aid=1988&app_language=es&app_name=tiktok_web&browser_language=es${roomParam}`;
+        
+        https.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'application/json'
+            }
+        }, (res) => {
+            let raw = '';
+            res.on('data', chunk => raw += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(raw);
+                    const gifts = (parsed && parsed.data && (parsed.data.gifts || parsed.data.pages)) ? (parsed.data.gifts || []) : [];
+                    resolve(gifts);
+                } catch (e) {
+                    resolve([]);
+                }
+            });
+        }).on('error', () => resolve([]));
+    });
+}
+
+function extraerMejorImagenRegalo(g) {
+    if (!g) return "";
+    const candidatos = [
+        g.image?.url_list?.[0],
+        g.image?.urlList?.[0],
+        g.icon?.url_list?.[0],
+        g.icon?.urlList?.[0],
+        g.giftPictureUrl,
+        g.pictureUrl,
+        g.icon_url,
+        g.image_url,
+        typeof g.image === 'string' ? g.image : null,
+        typeof g.icon === 'string' ? g.icon : null
+    ];
+
+    for (const url of candidatos) {
+        if (typeof url === 'string' && url.trim().startsWith('http')) {
+            return url.trim();
+        }
+    }
+    return "";
+}
+
+async function obtenerRegalosDeCuentaTikTok(connectionInstance, roomIdOpcional = null) {
+    let rawGifts = [];
+    let roomId = roomIdOpcional || currentRoomId || (connectionInstance && connectionInstance.roomId) || null;
+
+    if (connectionInstance && typeof connectionInstance.fetchAvailableGifts === 'function') {
+        try { rawGifts = await connectionInstance.fetchAvailableGifts(); } catch (e) {}
+    }
+    if ((!Array.isArray(rawGifts) || rawGifts.length === 0) && connectionInstance && typeof connectionInstance.getAvailableGifts === 'function') {
+        try { rawGifts = await connectionInstance.getAvailableGifts(); } catch (e) {}
+    }
+    if ((!Array.isArray(rawGifts) || rawGifts.length === 0) && connectionInstance && connectionInstance.webClient && typeof connectionInstance.webClient.getJsonObjectFromWebcastApi === 'function') {
+        try {
+            const apiRes = await connectionInstance.webClient.getJsonObjectFromWebcastApi('gift/list/', roomId ? { room_id: roomId } : {});
+            if (apiRes && apiRes.data && Array.isArray(apiRes.data.gifts)) rawGifts = apiRes.data.gifts;
+        } catch (e) {}
+    }
+    if (!Array.isArray(rawGifts) || rawGifts.length === 0) {
+        rawGifts = await fetchRegalosDirectoAPI(roomId);
+    }
+    if (!Array.isArray(rawGifts) || rawGifts.length === 0) return [];
+
+    const procesados = [];
+    const vistos = new Set();
+
+    const extraerDeLista = (lista) => {
+        if (!Array.isArray(lista)) return;
+        lista.forEach(g => {
+            if (!g) return;
+            if (Array.isArray(g.gifts)) { extraerDeLista(g.gifts); return; }
+            const id = parseInt(g.id || g.gift_id || g.giftId);
+            if (!id || vistos.has(id)) return;
+            vistos.add(id);
+
+            const name = (g.name || g.giftName || g.describe || `Regalo ${id}`).trim();
+            const diamonds = parseInt(g.diamond_count !== undefined ? g.diamond_count : (g.diamondCount !== undefined ? g.diamondCount : g.diamonds)) || 1;
+            const image = extraerMejorImagenRegalo(g);
+
+            procesados.push({ id, name, diamonds, image });
+        });
+    };
+
+    extraerDeLista(rawGifts);
+    procesados.sort((a, b) => a.diamonds - b.diamonds || a.id - b.id);
+    regalosDetectadosCuenta = procesados;
+
+    guardarListaRegalosEnCatalogo(regalosDetectadosCuenta);
+
+    io.emit('regalos_cuenta_detectados', {
+        cuenta: configGlobal.username,
+        total: regalosDetectadosCuenta.length,
+        regalos: regalosDetectadosCuenta
+    });
+
+    return regalosDetectadosCuenta;
+}
+
+function guardarListaRegalosEnCatalogo(listaRegalos) {
+    if (!Array.isArray(listaRegalos) || listaRegalos.length === 0) return { guardados: 0, total: catalogoGlobal.length };
+
+    let nuevosOActualizados = 0;
+    const mapaActual = new Map(catalogoGlobal.map(g => [Number(g.id), g]));
+
+    listaRegalos.forEach(nuevo => {
+        const id = parseInt(nuevo.id);
+        if (!id) return;
+
+        const existente = mapaActual.get(id);
+        if (!existente) {
+            const nuevoObj = {
+                id: id,
+                name: nuevo.name || `Regalo ${id}`,
+                diamonds: parseInt(nuevo.diamonds) || 1,
+                image: nuevo.image || ""
+            };
+            catalogoGlobal.push(nuevoObj);
+            mapaActual.set(id, nuevoObj);
+            nuevosOActualizados++;
+        } else {
+            existente.name = nuevo.name || existente.name;
+            existente.diamonds = parseInt(nuevo.diamonds) || existente.diamonds;
+            if (nuevo.image && nuevo.image.trim() !== "") existente.image = nuevo.image;
+            nuevosOActualizados++;
+        }
+    });
+
+    catalogoGlobal.sort((a, b) => a.diamonds - b.diamonds || a.id - b.id);
+    configGlobal.regalosDisponibles = catalogoGlobal;
+    sincronizarImagenesAsignadas();
+    guardarEnArchivo(true);
+    
+    io.emit('catalogo_actualizado', catalogoGlobal);
+    io.emit('config_actual', configGlobal);
+
+    return { guardados: nuevosOActualizados, total: catalogoGlobal.length };
+}
+
+// 🌟 CERRAR RONDA GLOBAL: Cierra Top Donadores y formatea Top Likes en memoria salvo que keepOnGlobalClose esté activo
+function cerrarRondasGlobales() {
+    let seGuardoVIP = false;
+
+    // 1. Si Top Likes NO tiene activado "Mantener likes", se formatea a 0 en RAM
+    if (!configGlobal.topLikes?.keepOnGlobalClose) {
+        topLikesMemoryRound = {};
+        io.emit('top_likes_data_update', getTopLikesPayload());
     }
 
-    let arrVIPs = Object.entries(configGlobal.topVIP.currentRound).map(([u, d]) => ({userKey: u, ...d})).sort((a,b) => b.coins - a.coins);
+    // 2. Procesar ganador de Top Donadores VIP
+    let arrVIPs = Object.entries(topVIPMemoryRound).map(([u, d]) => ({userKey: u, ...d})).sort((a,b) => b.coins - a.coins);
     if (arrVIPs.length > 0) {
         let top1 = arrVIPs[0]; 
-        
         if(!configGlobal.topVIP.recordHistorico[top1.userKey]) {
             configGlobal.topVIP.recordHistorico[top1.userKey] = { avatar: top1.avatar, displayName: top1.displayName, wins: 0, streak: 0 };
         }
@@ -239,20 +418,16 @@ function cerrarRondasGlobales() {
             let loser = arrVIPs[i];
             if (configGlobal.topVIP.recordHistorico[loser.userKey]) {
                 configGlobal.topVIP.recordHistorico[loser.userKey].streak = 0; 
-            } else {
-                configGlobal.topVIP.recordHistorico[loser.userKey] = { avatar: loser.avatar, displayName: loser.displayName, wins: 0, streak: 0 };
             }
         }
-        configGlobal.topVIP.currentRound = {}; 
-        seCerroAlgo = true;
+        topVIPMemoryRound = {}; 
+        seGuardoVIP = true;
     }
 
-    if (seCerroAlgo) {
-        guardarEnArchivo(); 
-        io.emit('top_likes_data_update', configGlobal.topLikes); 
-        io.emit('top_vip_data_update', configGlobal.topVIP); 
-        io.emit('config_actual', configGlobal);
+    if (seGuardoVIP) {
+        guardarEnArchivo(true); 
     }
+    io.emit('top_vip_data_update', getTopVIPPayload()); 
 }
 
 let tiktokLiveConnection = null;
@@ -260,11 +435,47 @@ let desconexionIntencional = false;
 const regalosProcesados = new Set();
 const combosActivos = new Map(); 
 
+// Emisión de Top Likes con throttle ligero (máximo 1 actualización cada 400ms para no saturar sockets)
+let likesEmitTimer = null;
+function emitTopLikesThrottled() {
+    if (likesEmitTimer) return;
+    likesEmitTimer = setTimeout(() => {
+        likesEmitTimer = null;
+        io.emit('top_likes_data_update', getTopLikesPayload());
+    }, 400);
+}
+
+function getSortedTeamDonators() {
+    let listSalvar = Object.entries(teamSalvar.donators)
+        .filter(([k]) => k !== 'MANUAL')
+        .map(([userKey, info]) => ({ userKey, name: info.displayName, coins: info.coins, avatar: info.avatar }))
+        .sort((a, b) => b.coins - a.coins);
+
+    let listReiniciar = Object.entries(teamReiniciar.donators)
+        .filter(([k]) => k !== 'MANUAL')
+        .map(([userKey, info]) => ({ userKey, name: info.displayName, coins: info.coins, avatar: info.avatar }))
+        .sort((a, b) => b.coins - a.coins);
+
+    return {
+        topSalvar: listSalvar[0] || { name: 'ESPERANDO', coins: 0, avatar: '' },
+        topReiniciar: listReiniciar[0] || { name: 'ESPERANDO', coins: 0, avatar: '' },
+        donatorsSalvar: listSalvar.slice(0, 15),
+        donatorsReiniciar: listReiniciar.slice(0, 15)
+    };
+}
+
 function emitSalvarUpdate(target) {
-    let topSalvar = Object.entries(teamSalvar.donators).map(([name, info]) => ({ name: info.displayName, coins: info.coins, avatar: info.avatar })).sort((a, b) => b.coins - a.coins)[0] || { name: 'ESPERANDO', coins: 0, avatar: '' };
-    let topReiniciar = Object.entries(teamReiniciar.donators).map(([name, info]) => ({ name: info.displayName, coins: info.coins, avatar: info.avatar })).sort((a, b) => b.coins - a.coins)[0] || { name: 'ESPERANDO', coins: 0, avatar: '' };
+    const { topSalvar, topReiniciar, donatorsSalvar, donatorsReiniciar } = getSortedTeamDonators();
     
-    target.emit('actualizacion_salvar', { totalSalvar: teamSalvar.total, totalReiniciar: teamReiniciar.total, topSalvar: topSalvar, topReiniciar: topReiniciar });
+    target.emit('actualizacion_salvar', {
+        totalSalvar: teamSalvar.total,
+        totalReiniciar: teamReiniciar.total,
+        topSalvar,
+        topReiniciar,
+        donatorsSalvar,
+        donatorsReiniciar
+    });
+
     target.emit('actualizacion_unidades', { 
         totalSalvar: teamSalvarUnidades.total, 
         totalReiniciar: teamReiniciarUnidades.total, 
@@ -282,6 +493,7 @@ function desconectarTikTok() {
         desconexionIntencional = true;
         try { tiktokLiveConnection.disconnect(); } catch (e) {}
         tiktokLiveConnection = null;
+        currentRoomId = null;
         currentTotalLikes = 0; 
         io.emit('estado_conexion', { estado: 'desconectado', msg: '🔴 Desconectado manualmente' });
     }
@@ -297,8 +509,14 @@ function conectarTikTok(usuario) {
     let connectionInstance = new WebcastPushConnection(userLimpio);
     tiktokLiveConnection = connectionInstance;
 
-    connectionInstance.connect().then(() => {
-        io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 📡 Radar Activo` });
+    connectionInstance.connect().then(async (state) => {
+        currentRoomId = (state && state.roomId) ? state.roomId : connectionInstance.roomId;
+
+        if (state && Array.isArray(state.availableGifts) && state.availableGifts.length > 0) {
+            await obtenerRegalosDeCuentaTikTok({ fetchAvailableGifts: async () => state.availableGifts }, currentRoomId);
+        }
+
+        io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 📡 Sincronizando regalos...` });
         if (!configGlobal.historial.includes(userLimpio)) {
             configGlobal.historial.unshift(userLimpio);
             if (configGlobal.historial.length > 10) configGlobal.historial.pop();
@@ -306,7 +524,20 @@ function conectarTikTok(usuario) {
         }
         io.emit('config_actual', configGlobal);
 
-    }).catch(err => { io.emit('estado_conexion', { estado: 'error', msg: `❌ Error: ${err.message}` }); });
+        const detectados = regalosDetectadosCuenta.length > 0
+            ? regalosDetectadosCuenta
+            : await obtenerRegalosDeCuentaTikTok(connectionInstance, currentRoomId);
+
+        if (detectados.length > 0) {
+            io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 🎁 ${detectados.length} Regalos Listos` });
+        } else {
+            io.emit('estado_conexion', { estado: 'conectado', msg: `🟢 Conectado a @${userLimpio} | 📡 Radar Activo` });
+        }
+
+    }).catch(async (err) => {
+        await obtenerRegalosDeCuentaTikTok(connectionInstance);
+        io.emit('estado_conexion', { estado: 'error', msg: `❌ Error: ${err.message}` });
+    });
 
     connectionInstance.on('disconnected', () => {
         if (tiktokLiveConnection === connectionInstance && !desconexionIntencional) {
@@ -320,7 +551,7 @@ function conectarTikTok(usuario) {
     });
 
     connectionInstance.on('chat', data => {
-        let texto = data.comment.toLowerCase();
+        let texto = (data.comment || "").toLowerCase();
         let user = data.uniqueId;
         
         if (configGlobal.sociales && configGlobal.sociales.followRequiresChat) {
@@ -328,7 +559,7 @@ function conectarTikTok(usuario) {
             if (texto.trim() === requiredWord && recentFollowers.has(user)) {
                 let cleanName = (data.nickname || data.uniqueId).replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim() || data.uniqueId;
                 if (cleanName.length > 18) cleanName = cleanName.substring(0, 18) + "...";
-                let avatarUrl = (data.userDetails && data.userDetails.profilePictureUrls && data.userDetails.profilePictureUrls.length > 0) ? data.userDetails.profilePictureUrls[0] : "https://www.gravatar.com/avatar/0?d=mp&f=y";
+                let avatarUrl = (data.userDetails?.profilePictureUrls?.[0]) || "";
                 
                 ultimoSeguidorData = { name: cleanName, avatar: avatarUrl };
                 io.emit('update_ultimo_seguidor', ultimoSeguidorData);
@@ -339,22 +570,16 @@ function conectarTikTok(usuario) {
         let wordsEq1 = (configGlobal.equipo1.joinWords || "chicos, heroes, salvar, 1").toLowerCase().split(',').map(w=>w.trim()).filter(w=>w.length > 0);
         let wordsEq2 = (configGlobal.equipo2.joinWords || "chicas, villanos, reiniciar, 2").toLowerCase().split(',').map(w=>w.trim()).filter(w=>w.length > 0);
 
-        let matchEq1 = wordsEq1.some(w => texto.includes(w));
-        let matchEq2 = wordsEq2.some(w => texto.includes(w));
-
-        if (matchEq1) { userTeams[user] = 1; } 
-        else if (matchEq2) { userTeams[user] = 2; }
+        if (wordsEq1.some(w => texto.includes(w))) userTeams[user] = 1;
+        else if (wordsEq2.some(w => texto.includes(w))) userTeams[user] = 2;
     });
 
     connectionInstance.on('like', data => {
         let totalTikTok = parseInt(data.totalLikeCount);
         let batchLikes = parseInt(data.likeCount) || 1;
 
-        if (!isNaN(totalTikTok) && totalTikTok > currentTotalLikes) {
-            currentTotalLikes = totalTikTok;
-        } else {
-            currentTotalLikes += batchLikes;
-        }
+        if (!isNaN(totalTikTok) && totalTikTok > currentTotalLikes) currentTotalLikes = totalTikTok;
+        else currentTotalLikes += batchLikes;
         
         io.emit('sync_likes_actuales', currentTotalLikes);
 
@@ -379,37 +604,28 @@ function conectarTikTok(usuario) {
             }
         }
 
+        // 🌟 TOP LIKES 100% EN MEMORIA RAM (Cero escritura en disco)
         let user = data.uniqueId;
         let cleanName = (data.nickname || data.uniqueId).replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim() || user;
-        if (cleanName.length > 12) { cleanName = cleanName.substring(0, 12) + "..."; }
-        
-        let avatarUrl = "https://www.gravatar.com/avatar/0?d=mp&f=y";
-        if (data.profilePictureUrl) {
-            avatarUrl = data.profilePictureUrl;
-        } else if (data.userDetails && data.userDetails.profilePictureUrls && data.userDetails.profilePictureUrls.length > 0) {
-            avatarUrl = data.userDetails.profilePictureUrls[0];
-        }
+        if (cleanName.length > 12) cleanName = cleanName.substring(0, 12) + "...";
+        let avatarUrl = data.profilePictureUrl || (data.userDetails?.profilePictureUrls?.[0]) || "";
 
-        if (!configGlobal.topLikes.currentRound[user]) {
-            configGlobal.topLikes.currentRound[user] = { likes: 0, avatar: avatarUrl, displayName: cleanName };
+        if (!topLikesMemoryRound[user]) {
+            topLikesMemoryRound[user] = { likes: 0, avatar: avatarUrl, displayName: cleanName };
         } else {
-            configGlobal.topLikes.currentRound[user].avatar = avatarUrl;
-            configGlobal.topLikes.currentRound[user].displayName = cleanName;
+            topLikesMemoryRound[user].avatar = avatarUrl;
+            topLikesMemoryRound[user].displayName = cleanName;
         }
-        configGlobal.topLikes.currentRound[user].likes += batchLikes;
+        topLikesMemoryRound[user].likes += batchLikes;
         
-        io.emit('top_likes_data_update', configGlobal.topLikes);
+        emitTopLikesThrottled();
     });
 
     connectionInstance.on('follow', data => {
         let user = data.uniqueId;
         let cleanName = (data.nickname || data.uniqueId).replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim() || data.uniqueId;
-        if (cleanName.length > 18) { cleanName = cleanName.substring(0, 18) + "..."; }
-        
-        let avatarUrl = "https://www.gravatar.com/avatar/0?d=mp&f=y";
-        if (data.userDetails && data.userDetails.profilePictureUrls && data.userDetails.profilePictureUrls.length > 0) {
-            avatarUrl = data.userDetails.profilePictureUrls[0];
-        }
+        if (cleanName.length > 18) cleanName = cleanName.substring(0, 18) + "...";
+        let avatarUrl = (data.userDetails?.profilePictureUrls?.[0]) || "";
 
         if (configGlobal.sociales && configGlobal.sociales.followRequiresChat) {
             recentFollowers.add(data.uniqueId);
@@ -429,13 +645,11 @@ function conectarTikTok(usuario) {
 
                 let posOptions = [1, 50, 100, 200, 500, 1000];
                 let negOptions = [-1, -50, -100, -200, -500, -1000];
-                let roll = Math.random() * 100;
-                let chosenArray = (roll < probPositiva) ? posOptions : negOptions;
+                let chosenArray = (Math.random() * 100 < probPositiva) ? posOptions : negOptions;
                 let result = chosenArray[Math.floor(Math.random() * chosenArray.length)];
-                
                 let spinId = 'spin_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
                 
-                io.emit('wins_ruleta_trigger', { spinId: spinId, name: cleanName, avatar: avatarUrl, result: result });
+                io.emit('wins_ruleta_trigger', { spinId, name: cleanName, avatar: avatarUrl, result });
             }
         }
     });
@@ -443,21 +657,14 @@ function conectarTikTok(usuario) {
     connectionInstance.on('gift', data => {
         let user = data.uniqueId;
         let cleanName = (data.nickname || data.uniqueId).replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim() || user; 
-        if (cleanName.length > 12) { cleanName = cleanName.substring(0, 12) + "..."; }
+        if (cleanName.length > 12) cleanName = cleanName.substring(0, 12) + "...";
         
-        let avatarUrl = "https://www.gravatar.com/avatar/0?d=mp&f=y";
-        if (data.userDetails && data.userDetails.profilePictureUrls && data.userDetails.profilePictureUrls.length > 0) avatarUrl = data.userDetails.profilePictureUrls[0];
-        
+        let avatarUrl = (data.userDetails?.profilePictureUrls?.[0]) || "";
         let giftId = parseInt(data.giftId) || 0; 
         let giftName = data.giftName || "Regalo";
         let unitPrice = parseInt(data.diamondCount) || 0; 
         
-        let giftImgUrl = data.giftPictureUrl || ""; 
-        if (!giftImgUrl && data.extendedGiftInfo && data.extendedGiftInfo.image && data.extendedGiftInfo.image.url_list && data.extendedGiftInfo.image.url_list.length > 0) {
-            giftImgUrl = data.extendedGiftInfo.image.url_list[0];
-        } else if (!giftImgUrl && data.gift && data.gift.image && data.gift.image.url_list && data.gift.image.url_list.length > 0) {
-            giftImgUrl = data.gift.image.url_list[0];
-        }
+        let giftImgUrl = data.giftPictureUrl || data.extendedGiftInfo?.image?.url_list?.[0] || data.gift?.image?.url_list?.[0] || "";
 
         if (giftId === 7934) {
             let fullName = (data.nickname || data.uniqueId).replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÑñ]/g, '').trim() || data.uniqueId;
@@ -469,37 +676,20 @@ function conectarTikTok(usuario) {
         let knownGift = catalogoGlobal.find(g => Number(g.id) === giftId);
         if (knownGift) { 
             unitPrice = knownGift.diamonds; 
-            
-            let esImagenFalsa = !knownGift.image || knownGift.image.includes('via.placeholder.com') || knownGift.image.trim() === "";
-            if (esImagenFalsa && giftImgUrl !== "") {
+            if ((!knownGift.image || knownGift.image.trim() === "") && giftImgUrl !== "") {
                 knownGift.image = giftImgUrl;
-                
-                let actualizarConfigAsignada = (arr) => {
-                    if(!arr) return;
-                    arr.forEach(item => { if(Number(item.id) === giftId) item.image = giftImgUrl; });
-                };
-                
-                actualizarConfigAsignada(configGlobal.equipo1.regalos);
-                actualizarConfigAsignada(configGlobal.equipo2.regalos);
-                if(configGlobal.unidades) { 
-                    actualizarConfigAsignada(configGlobal.unidades.equipo1.regalos); 
-                    actualizarConfigAsignada(configGlobal.unidades.equipo2.regalos);
-                    if(configGlobal.unidades.superReset) {
-                        actualizarConfigAsignada(configGlobal.unidades.superReset.regalosSalvar);
-                        actualizarConfigAsignada(configGlobal.unidades.superReset.regalosReiniciar);
-                    }
-                }
-                if(configGlobal.winsRuleta) { actualizarConfigAsignada(configGlobal.winsRuleta.regalosSumar); actualizarConfigAsignada(configGlobal.winsRuleta.regalosRestar); }
-                
-                guardarEnArchivo(); io.emit('config_actual', configGlobal); 
+                sincronizarImagenesAsignadas();
+                guardarEnArchivo();
             }
         } else {
             let nuevoRegalo = { id: giftId, name: giftName, diamonds: unitPrice, image: giftImgUrl };
-            catalogoGlobal.push(nuevoRegalo); catalogoGlobal.sort((a, b) => a.diamonds - b.diamonds);
-            configGlobal.regalosDisponibles = catalogoGlobal; guardarEnArchivo(); io.emit('config_actual', configGlobal); 
+            catalogoGlobal.push(nuevoRegalo);
+            catalogoGlobal.sort((a, b) => a.diamonds - b.diamonds);
+            configGlobal.regalosDisponibles = catalogoGlobal;
+            guardarEnArchivo();
         }
 
-        if (configGlobal.roundGifts && unitPrice % 10 === 9) { unitPrice += 1; }
+        if (configGlobal.roundGifts && unitPrice % 10 === 9) unitPrice += 1;
 
         let cantidadAProcesar = 0;
 
@@ -510,11 +700,10 @@ function conectarTikTok(usuario) {
             let diferencia = nuevoCount - countAnterior;
 
             if (diferencia <= 0) return; 
-
             cantidadAProcesar = diferencia; 
             combosActivos.set(comboId, nuevoCount);
 
-            if (data.repeatEnd) { setTimeout(() => combosActivos.delete(comboId), 10000); }
+            if (data.repeatEnd) setTimeout(() => combosActivos.delete(comboId), 10000);
         } else {
             let huellaRegalo = data.msgId || (data.uniqueId + data.timestamp);
             if (regalosProcesados.has(huellaRegalo)) return; 
@@ -525,9 +714,9 @@ function conectarTikTok(usuario) {
         }
 
         if (isNaN(cantidadAProcesar) || cantidadAProcesar <= 0) return;
-
         const totalCoins = unitPrice * cantidadAProcesar;
 
+        // Wins Ruleta
         if (configGlobal.winsRuleta) {
             let isSumarWins = configGlobal.winsRuleta.regalosSumar.some(r => Number(r.id) === giftId);
             let isRestarWins = configGlobal.winsRuleta.regalosRestar.some(r => Number(r.id) === giftId);
@@ -535,72 +724,53 @@ function conectarTikTok(usuario) {
             if (isSumarWins || isRestarWins) {
                 let winChange = isSumarWins ? totalCoins : -totalCoins;
                 estadoWins.actuales += winChange;
-                
                 io.emit('wins_ruleta_update', estadoWins);
-                io.emit('wins_ruleta_popup', {
-                    name: cleanName,
-                    avatar: avatarUrl,
-                    amount: winChange,
-                    type: isSumarWins ? 'sumar' : 'restar'
-                });
+                io.emit('wins_ruleta_popup', { name: cleanName, avatar: avatarUrl, amount: winChange, type: isSumarWins ? 'sumar' : 'restar' });
             }
         }
 
+        // 🌟 SALÓN DE LA FAMA OPTIMIZADO (Ignora regalos pequeños y solo actualiza si supera su récord o entra al Top)
         if (configGlobal.salonFama) {
             if (!configGlobal.salonFama.record) configGlobal.salonFama.record = {};
-            
-            let maxGiftInHall = 0;
-            let recordKeys = Object.keys(configGlobal.salonFama.record);
-            if (recordKeys.length > 0) {
-                maxGiftInHall = Math.max(...recordKeys.map(k => configGlobal.salonFama.record[k].diamonds));
-            }
+            const minCoinsFama = parseInt(configGlobal.salonFama.minCoins) || 10;
 
-            if (totalCoins <= 1 && maxGiftInHall >= 100) {
-                // Ignore
-            } else {
-                let bestGiftImage = (knownGift && knownGift.image && !knownGift.image.includes('via.placeholder.com')) ? knownGift.image : giftImgUrl;
-                
-                let uniqueGiftId = user + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-                
-                configGlobal.salonFama.record[uniqueGiftId] = {
-                    userId: user,
-                    name: cleanName,
-                    avatar: avatarUrl,
-                    giftName: giftName,
-                    giftImage: bestGiftImage,
-                    diamonds: totalCoins
-                };
+            if (totalCoins >= minCoinsFama) {
+                const prevUserRecord = configGlobal.salonFama.record[user];
+                // Solo guarda y emite si el usuario no tenía récord o si este regalo supera su récord anterior
+                if (!prevUserRecord || totalCoins > prevUserRecord.diamonds) {
+                    let bestGiftImage = (knownGift && knownGift.image) ? knownGift.image : giftImgUrl;
+                    configGlobal.salonFama.record[user] = {
+                        userId: user,
+                        name: cleanName,
+                        avatar: avatarUrl,
+                        giftName: giftName,
+                        giftImage: bestGiftImage,
+                        diamonds: totalCoins
+                    };
 
-                let allRecords = Object.entries(configGlobal.salonFama.record).map(([k, v]) => ({key: k, ...v}));
-                allRecords.sort((a, b) => b.diamonds - a.diamonds);
-                
-                if (allRecords.length > 100) {
-                    let toDelete = allRecords.slice(100);
-                    toDelete.forEach(item => {
-                        delete configGlobal.salonFama.record[item.key];
-                    });
+                    // Mantener máximo 30 récords en disco para no saturar nunca data.json
+                    let allRecords = Object.entries(configGlobal.salonFama.record).map(([k, v]) => ({key: k, ...v})).sort((a, b) => b.diamonds - a.diamonds);
+                    if (allRecords.length > 30) {
+                        allRecords.slice(30).forEach(item => delete configGlobal.salonFama.record[item.key]);
+                    }
+
+                    guardarEnArchivo();
+                    io.emit('salon_fama_update', configGlobal.salonFama);
                 }
-
-                guardarEnArchivo();
-                io.emit('salon_fama_update', configGlobal.salonFama);
             }
         }
 
-        if (!configGlobal.topVIP.currentRound[user]) {
-            configGlobal.topVIP.currentRound[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
+        // Top Donadores VIP (Ronda actual en RAM)
+        if (!topVIPMemoryRound[user]) {
+            topVIPMemoryRound[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
         } else {
-            configGlobal.topVIP.currentRound[user].avatar = avatarUrl;
-            configGlobal.topVIP.currentRound[user].displayName = cleanName;
+            topVIPMemoryRound[user].avatar = avatarUrl;
+            topVIPMemoryRound[user].displayName = cleanName;
         }
-        configGlobal.topVIP.currentRound[user].coins += totalCoins;
-        io.emit('top_vip_data_update', configGlobal.topVIP);
+        topVIPMemoryRound[user].coins += totalCoins;
+        io.emit('top_vip_data_update', getTopVIPPayload());
 
-        if (!topDonators[user]) topDonators[user] = { monedas: 0, avatar: avatarUrl, displayName: cleanName };
-        else { topDonators[user].avatar = avatarUrl; topDonators[user].displayName = cleanName; }
-        topDonators[user].monedas += totalCoins;
-        topSorted = Object.entries(topDonators).map(([nombre, info]) => ({ nombre: info.displayName, monedas: info.monedas, avatar: info.avatar })).sort((a, b) => b.monedas - a.monedas).slice(0, 2); 
-        io.emit('actualizacion', topSorted);
-
+        // Batalla Clásica (Monedas por Equipo 1 y Equipo 2)
         let isSalvarMonedas = configGlobal.equipo1.regalos.some(r => Number(r.id) === giftId);
         let isReiniciarMonedas = configGlobal.equipo2.regalos.some(r => Number(r.id) === giftId);
         
@@ -610,27 +780,34 @@ function conectarTikTok(usuario) {
         if (isSalvarMonedas) {
             teamSalvar.total += totalCoins;
             if (!teamSalvar.donators[user]) teamSalvar.donators[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
-            teamSalvar.donators[user].avatar = avatarUrl; teamSalvar.donators[user].displayName = cleanName; teamSalvar.donators[user].coins += totalCoins;
+            teamSalvar.donators[user].avatar = avatarUrl;
+            teamSalvar.donators[user].displayName = cleanName;
+            teamSalvar.donators[user].coins += totalCoins;
             io.emit('poder_salvar', { side: 'salvar', amount: totalCoins });
         } else if (isReiniciarMonedas) {
             teamReiniciar.total += totalCoins;
             if (!teamReiniciar.donators[user]) teamReiniciar.donators[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
-            teamReiniciar.donators[user].avatar = avatarUrl; teamReiniciar.donators[user].displayName = cleanName; teamReiniciar.donators[user].coins += totalCoins;
+            teamReiniciar.donators[user].avatar = avatarUrl;
+            teamReiniciar.donators[user].displayName = cleanName;
+            teamReiniciar.donators[user].coins += totalCoins;
             io.emit('poder_salvar', { side: 'reiniciar', amount: totalCoins });
         }
 
+        // Batalla Unidades
         if (configGlobal.unidades) {
-            let isSalvarUnidad = configGlobal.unidades.equipo1.regalos.some(r => Number(r.id) === giftId);
-            let isReiniciarUnidad = configGlobal.unidades.equipo2.regalos.some(r => Number(r.id) === giftId);
-            
-            if (isSalvarUnidad) {
-                teamSalvarUnidades.total += cantidadAProcesar;
-                lastDonatorSalvarUnid = { name: cleanName, avatar: avatarUrl };
-                io.emit('poder_salvar_unidades', { side: 'salvar', amount: cantidadAProcesar });
-            } else if (isReiniciarUnidad) {
-                teamReiniciarUnidades.total += cantidadAProcesar;
-                lastDonatorReiniciarUnid = { name: cleanName, avatar: avatarUrl };
-                io.emit('poder_salvar_unidades', { side: 'reiniciar', amount: cantidadAProcesar });
+            if (configGlobal.unidades.normalEnabled !== false) {
+                let isSalvarUnidad = (configGlobal.unidades.equipo1?.regalos || []).some(r => Number(r.id) === giftId);
+                let isReiniciarUnidad = (configGlobal.unidades.equipo2?.regalos || []).some(r => Number(r.id) === giftId);
+                
+                if (isSalvarUnidad) {
+                    teamSalvarUnidades.total += cantidadAProcesar;
+                    lastDonatorSalvarUnid = { name: cleanName, avatar: avatarUrl };
+                    io.emit('poder_salvar_unidades', { side: 'salvar', amount: cantidadAProcesar });
+                } else if (isReiniciarUnidad) {
+                    teamReiniciarUnidades.total += cantidadAProcesar;
+                    lastDonatorReiniciarUnid = { name: cleanName, avatar: avatarUrl };
+                    io.emit('poder_salvar_unidades', { side: 'reiniciar', amount: cantidadAProcesar });
+                }
             }
 
             if (configGlobal.unidades.superReset && configGlobal.unidades.superReset.enabled !== false) {
@@ -658,78 +835,122 @@ if(configGlobal.username !== "") conectarTikTok(configGlobal.username);
 
 io.on('connection', (socket) => {
     socket.emit('config_actual', configGlobal);
-    socket.emit('actualizacion', topSorted);
+    socket.emit('catalogo_actualizado', catalogoGlobal);
     socket.emit('racha_versus_update', configGlobal.rachaVersus);
     socket.emit('sync_likes_actuales', currentTotalLikes);
-    socket.emit('top_likes_data_update', configGlobal.topLikes); 
-    socket.emit('top_vip_data_update', configGlobal.topVIP); 
+    socket.emit('top_likes_data_update', getTopLikesPayload()); 
+    socket.emit('top_vip_data_update', getTopVIPPayload()); 
     socket.emit('update_ultimo_seguidor', ultimoSeguidorData);
     socket.emit('update_ultimo_quiereme', ultimoQuieremeData);
-    
     socket.emit('wins_ruleta_update', estadoWins);
     socket.emit('salon_fama_update', configGlobal.salonFama);
+
+    if (regalosDetectadosCuenta.length > 0) {
+        socket.emit('regalos_cuenta_detectados', {
+            cuenta: configGlobal.username,
+            total: regalosDetectadosCuenta.length,
+            regalos: regalosDetectadosCuenta
+        });
+    }
 
     if(configGlobal.metaLikes) {
         socket.emit('meta_likes_update', { current: currentTotalLikes, goal: configGlobal.metaLikes.currentGoal, text: configGlobal.metaLikes.actionText, prefix: configGlobal.metaLikes.prefixText, style: configGlobal.metaLikes.style });
     }
     emitSalvarUpdate(socket);
 
-    socket.on('comando_conectar', (usuario) => { configGlobal.username = usuario.trim(); guardarEnArchivo(); conectarTikTok(configGlobal.username); });
-    socket.on('comando_desconectar', () => { desconectarTikTok(); });
+    socket.on('comando_conectar', (usuario) => { configGlobal.username = usuario.trim(); guardarEnArchivo(true); conectarTikTok(configGlobal.username); });
+    socket.on('comando_desconectar', () => desconectarTikTok());
+
+    socket.on('escanear_regalos_tiktok', async (usuarioOpcional) => {
+        try {
+            let instancia = tiktokLiveConnection;
+            if (!instancia) {
+                let userTarget = (usuarioOpcional || configGlobal.username || "").replace('@', '').trim();
+                if (userTarget) instancia = new WebcastPushConnection(userTarget);
+            }
+            const lista = await obtenerRegalosDeCuentaTikTok(instancia, currentRoomId);
+            if (lista.length === 0) {
+                socket.emit('resultado_guardar_regalos', { ok: false, msg: "⚠️ TikTok no devolvió regalos. Verifica la cuenta o conexión." });
+            }
+        } catch (e) {
+            socket.emit('resultado_guardar_regalos', { ok: false, msg: "❌ Error al consultar regalos: " + e.message });
+        }
+    });
+
+    socket.on('guardar_regalos_detectados', (listaCliente) => {
+        const listaAGuardar = (Array.isArray(listaCliente) && listaCliente.length > 0) ? listaCliente : regalosDetectadosCuenta;
+        if (!listaAGuardar || listaAGuardar.length === 0) {
+            socket.emit('resultado_guardar_regalos', { ok: false, msg: "⚠️ Primero carga los regalos de tu cuenta." });
+            return;
+        }
+        const res = guardarListaRegalosEnCatalogo(listaAGuardar);
+        io.emit('resultado_guardar_regalos', {
+            ok: true,
+            guardados: res.guardados,
+            totalCatalogo: res.total,
+            msg: `✅ ¡Se guardaron y actualizaron ${res.guardados} regalos con sus imágenes oficiales!`
+        });
+    });
 
     socket.on('guardar_config', (nuevaConfig) => {
-        nuevaConfig.historial = configGlobal.historial; nuevaConfig.username = configGlobal.username;
-        nuevaConfig.regalosDisponibles = configGlobal.regalosDisponibles; 
+        nuevaConfig.historial = configGlobal.historial;
+        nuevaConfig.username = configGlobal.username;
+        nuevaConfig.regalosDisponibles = catalogoGlobal; 
         
         if (!nuevaConfig.equipo1.joinWords) nuevaConfig.equipo1.joinWords = configGlobal.equipo1.joinWords;
         if (!nuevaConfig.equipo2.joinWords) nuevaConfig.equipo2.joinWords = configGlobal.equipo2.joinWords;
         if (!nuevaConfig.sociales) nuevaConfig.sociales = configGlobal.sociales;
-
         if (configGlobal.unidades) nuevaConfig.unidades = configGlobal.unidades;
         if (configGlobal.winsRuleta) nuevaConfig.winsRuleta = configGlobal.winsRuleta;
         if (configGlobal.salonFama) nuevaConfig.salonFama = configGlobal.salonFama;
 
-        Object.assign(configGlobal, nuevaConfig); guardarEnArchivo(); io.emit('config_actual', configGlobal); emitSalvarUpdate(io); 
+        Object.assign(configGlobal, nuevaConfig);
+        sincronizarImagenesAsignadas();
+        guardarEnArchivo(true);
+        io.emit('config_actual', configGlobal);
+        emitSalvarUpdate(io); 
     });
 
+    socket.on('guardar_config_unidades', (data) => {
+        configGlobal.unidades = data;
+        sincronizarImagenesAsignadas();
+        guardarEnArchivo(true);
+        io.emit('config_actual', configGlobal);
+        emitSalvarUpdate(io); 
+    });
+
+    // Salón de la Fama
     socket.on('salon_fama_limpiar', () => {
         configGlobal.salonFama.record = {};
-        guardarEnArchivo();
+        guardarEnArchivo(true);
         io.emit('salon_fama_update', configGlobal.salonFama);
     });
 
     socket.on('salon_fama_eliminar', (userKey) => {
         delete configGlobal.salonFama.record[userKey];
-        guardarEnArchivo();
+        guardarEnArchivo(true);
         io.emit('salon_fama_update', configGlobal.salonFama);
     });
 
     socket.on('salon_fama_guardar_opciones', (opts) => {
-        configGlobal.salonFama.displayLimit = opts.displayLimit;
+        configGlobal.salonFama.displayLimit = parseInt(opts.displayLimit) || 5;
         configGlobal.salonFama.alignment = opts.alignment || 'left';
-        guardarEnArchivo();
+        configGlobal.salonFama.minCoins = parseInt(opts.minCoins) >= 1 ? parseInt(opts.minCoins) : 10;
+
+        // Limpiar automáticamente los que estén debajo del nuevo mínimo de monedas
+        for (const [k, v] of Object.entries(configGlobal.salonFama.record || {})) {
+            if (v.diamonds < configGlobal.salonFama.minCoins) {
+                delete configGlobal.salonFama.record[k];
+            }
+        }
+
+        guardarEnArchivo(true);
         io.emit('config_actual', configGlobal);
         io.emit('salon_fama_update', configGlobal.salonFama);
     });
 
-    socket.on('guardar_config_unidades', (data) => {
-        configGlobal.unidades = data;
-        guardarEnArchivo();
-        io.emit('config_actual', configGlobal);
-        emitSalvarUpdate(io); 
-    });
-
-    socket.on('guardar_config_sociales', (data) => {
-        configGlobal.sociales = data;
-        guardarEnArchivo();
-        io.emit('config_actual', configGlobal);
-    });
-
-    socket.on('guardar_config_wins_ruleta', (data) => {
-        configGlobal.winsRuleta = data;
-        guardarEnArchivo();
-        io.emit('config_actual', configGlobal);
-    });
+    socket.on('guardar_config_sociales', (data) => { configGlobal.sociales = data; guardarEnArchivo(true); io.emit('config_actual', configGlobal); });
+    socket.on('guardar_config_wins_ruleta', (data) => { configGlobal.winsRuleta = data; guardarEnArchivo(true); io.emit('config_actual', configGlobal); });
 
     socket.on('update_wins_estado', (data) => {
         estadoWins.actuales = parseInt(data.actuales) || 0;
@@ -744,8 +965,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('test_wins_ruleta', (data) => {
-        let spinId = 'test_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-        data.spinId = spinId;
+        data.spinId = 'test_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
         io.emit('wins_ruleta_trigger', data);
     });
 
@@ -762,22 +982,22 @@ io.on('connection', (socket) => {
         configGlobal.metaLikes = data.config;
         let mStep = parseInt(configGlobal.metaLikes.step) || 100;
         let mFirstGoal = parseInt(configGlobal.metaLikes.firstGoal) || 0;
-        if (mFirstGoal > currentTotalLikes) { configGlobal.metaLikes.currentGoal = mFirstGoal; } else { let base = Math.floor(currentTotalLikes / mStep) * mStep; configGlobal.metaLikes.currentGoal = base + mStep; }
-        configGlobal.metaLikes.step = mStep; configGlobal.metaLikes.firstGoal = mFirstGoal; 
-        guardarEnArchivo(); io.emit('config_actual', configGlobal); 
+        if (mFirstGoal > currentTotalLikes) configGlobal.metaLikes.currentGoal = mFirstGoal;
+        else configGlobal.metaLikes.currentGoal = (Math.floor(currentTotalLikes / mStep) * mStep) + mStep;
+        configGlobal.metaLikes.step = mStep;
+        configGlobal.metaLikes.firstGoal = mFirstGoal; 
+        guardarEnArchivo(true);
+        io.emit('config_actual', configGlobal); 
         io.emit('meta_likes_update', { current: currentTotalLikes, goal: configGlobal.metaLikes.currentGoal, text: configGlobal.metaLikes.actionText, prefix: configGlobal.metaLikes.prefixText, style: configGlobal.metaLikes.style });
     });
 
     socket.on('force_fetch_likes', async () => {
         if (tiktokLiveConnection) {
             try {
-                let roomInfo = await tiktokLiveConnection.getRoomInfo();
-                let fetchedLikes = 0;
-                
-                if (roomInfo && roomInfo.like_count) fetchedLikes = parseInt(roomInfo.like_count);
-                else if (roomInfo && roomInfo.data && roomInfo.data.like_count) fetchedLikes = parseInt(roomInfo.data.like_count);
-                else if (roomInfo && roomInfo.stats && roomInfo.stats.likeCount) fetchedLikes = parseInt(roomInfo.stats.likeCount);
-
+                let roomInfo = typeof tiktokLiveConnection.fetchRoomInfo === 'function'
+                    ? await tiktokLiveConnection.fetchRoomInfo()
+                    : await tiktokLiveConnection.getRoomInfo();
+                let fetchedLikes = parseInt(roomInfo?.like_count || roomInfo?.data?.like_count || roomInfo?.stats?.likeCount);
                 if (!isNaN(fetchedLikes)) {
                     currentTotalLikes = fetchedLikes;
                     io.emit('sync_likes_actuales', currentTotalLikes);
@@ -786,69 +1006,85 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('top_cerrar_ambas_rondas', () => { cerrarRondasGlobales(); });
-
-    socket.on('top_likes_limpiar_ronda', () => { configGlobal.topLikes.currentRound = {}; guardarEnArchivo(); io.emit('top_likes_data_update', configGlobal.topLikes); });
-    socket.on('top_likes_eliminar_ronda', (userKey) => { delete configGlobal.topLikes.currentRound[userKey]; guardarEnArchivo(); io.emit('top_likes_data_update', configGlobal.topLikes); });
-    socket.on('top_likes_guardar_opciones', (opts) => { 
-        configGlobal.topLikes.mirrorMode = opts.mirrorMode; 
-        guardarEnArchivo(); 
-        io.emit('config_actual', configGlobal); 
-        io.emit('top_likes_data_update', configGlobal.topLikes); 
+    // Top Likes (100% en RAM)
+    socket.on('top_cerrar_ambas_rondas', () => cerrarRondasGlobales());
+    socket.on('top_likes_limpiar_ronda', () => {
+        topLikesMemoryRound = {};
+        io.emit('top_likes_data_update', getTopLikesPayload());
+    });
+    socket.on('top_likes_eliminar_ronda', (userKey) => {
+        delete topLikesMemoryRound[userKey];
+        io.emit('top_likes_data_update', getTopLikesPayload());
+    });
+    socket.on('top_likes_guardar_opciones', (opts) => {
+        configGlobal.topLikes.mirrorMode = !!opts.mirrorMode;
+        configGlobal.topLikes.keepOnGlobalClose = !!opts.keepOnGlobalClose;
+        guardarEnArchivo(true);
+        io.emit('config_actual', configGlobal);
+        io.emit('top_likes_data_update', getTopLikesPayload());
     });
 
-    socket.on('top_vip_limpiar_ronda', () => { configGlobal.topVIP.currentRound = {}; guardarEnArchivo(); io.emit('top_vip_data_update', configGlobal.topVIP); });
-    socket.on('top_vip_limpiar_historial', () => { configGlobal.topVIP.recordHistorico = {}; guardarEnArchivo(); io.emit('top_vip_data_update', configGlobal.topVIP); });
-    socket.on('top_vip_eliminar_ronda', (userKey) => { delete configGlobal.topVIP.currentRound[userKey]; guardarEnArchivo(); io.emit('top_vip_data_update', configGlobal.topVIP); });
-    socket.on('top_vip_eliminar_historial', (userKey) => { 
-        delete configGlobal.topVIP.recordHistorico[userKey]; 
-        guardarEnArchivo(); 
-        io.emit('top_vip_data_update', configGlobal.topVIP); 
+    // Top Donadores VIP
+    socket.on('top_vip_limpiar_ronda', () => {
+        topVIPMemoryRound = {};
+        io.emit('top_vip_data_update', getTopVIPPayload());
+    });
+    socket.on('top_vip_limpiar_historial', () => {
+        configGlobal.topVIP.recordHistorico = {};
+        guardarEnArchivo(true);
+        io.emit('top_vip_data_update', getTopVIPPayload());
+    });
+    socket.on('top_vip_eliminar_ronda', (userKey) => {
+        delete topVIPMemoryRound[userKey];
+        io.emit('top_vip_data_update', getTopVIPPayload());
+    });
+    socket.on('top_vip_eliminar_historial', (userKey) => {
+        delete configGlobal.topVIP.recordHistorico[userKey];
+        guardarEnArchivo(true);
+        io.emit('top_vip_data_update', getTopVIPPayload());
     });
     socket.on('top_vip_ajuste_historial', (data) => { 
         let hist = configGlobal.topVIP.recordHistorico[data.userKey]; 
         if(hist) { 
-            hist.wins += data.amount; if(hist.wins < 0) hist.wins = 0; 
+            hist.wins = Math.max(0, hist.wins + data.amount);
             if(hist.wins === 0) hist.streak = 0; 
-            guardarEnArchivo(); 
-            io.emit('top_vip_data_update', configGlobal.topVIP); 
+            guardarEnArchivo(true);
+            io.emit('top_vip_data_update', getTopVIPPayload()); 
         } 
     });
     socket.on('top_vip_ajuste_racha', (data) => { 
         let hist = configGlobal.topVIP.recordHistorico[data.userKey]; 
         if(hist) { 
-            hist.streak = (hist.streak || 0) + data.amount; 
-            if(hist.streak < 0) hist.streak = 0; 
-            guardarEnArchivo(); 
-            io.emit('top_vip_data_update', configGlobal.topVIP); 
+            hist.streak = Math.max(0, (hist.streak || 0) + data.amount); 
+            guardarEnArchivo(true);
+            io.emit('top_vip_data_update', getTopVIPPayload()); 
         } 
     });
-    socket.on('top_vip_ajuste_ronda', (data) => { let ronda = configGlobal.topVIP.currentRound[data.userKey]; if(ronda) { ronda.coins += data.amount; if(ronda.coins < 0) ronda.coins = 0; guardarEnArchivo(); io.emit('top_vip_data_update', configGlobal.topVIP); } });
+    socket.on('top_vip_ajuste_ronda', (data) => {
+        let ronda = topVIPMemoryRound[data.userKey];
+        if(ronda) {
+            ronda.coins = Math.max(0, ronda.coins + data.amount);
+            io.emit('top_vip_data_update', getTopVIPPayload());
+        }
+    });
     socket.on('top_vip_guardar_opciones', (opts) => { 
-        configGlobal.topVIP.displayLimit = opts.displayLimit; 
-        configGlobal.topVIP.mirrorMode = opts.mirrorMode; 
-        guardarEnArchivo(); 
+        configGlobal.topVIP.displayLimit = parseInt(opts.displayLimit) || 2; 
+        configGlobal.topVIP.mirrorMode = !!opts.mirrorMode; 
+        guardarEnArchivo(true); 
         io.emit('config_actual', configGlobal); 
-        io.emit('top_vip_data_update', configGlobal.topVIP); 
+        io.emit('top_vip_data_update', getTopVIPPayload()); 
     });
 
-    socket.on('guardar_config_bolita', (bolitaConfig) => { configGlobal.bolita = bolitaConfig; guardarEnArchivo(); io.emit('config_actual', configGlobal); });
+    socket.on('guardar_config_bolita', (bolitaConfig) => { configGlobal.bolita = bolitaConfig; guardarEnArchivo(true); io.emit('config_actual', configGlobal); });
     
     socket.on('modificar_puntos_equipo', (data) => {
         let cantidad = parseInt(data.cantidad) || 0;
         if (cantidad === 0) return;
 
         if (data.equipo === 1) { 
-            teamSalvar.total += cantidad; 
-            if (teamSalvar.total < 0) teamSalvar.total = 0; 
-            if (!teamSalvar.donators['MANUAL']) teamSalvar.donators['MANUAL'] = { coins: 0, avatar: '', displayName: 'MANUAL' };
-            teamSalvar.donators['MANUAL'].coins += cantidad;
-        } 
-        else if (data.equipo === 2) { 
-            teamReiniciar.total += cantidad; 
-            if (teamReiniciar.total < 0) teamReiniciar.total = 0; 
-            if (!teamReiniciar.donators['MANUAL']) teamReiniciar.donators['MANUAL'] = { coins: 0, avatar: '', displayName: 'MANUAL' };
-            teamReiniciar.donators['MANUAL'].coins += cantidad;
+            teamSalvar.total = Math.max(0, teamSalvar.total + cantidad); 
+        } else if (data.equipo === 2) { 
+            teamReiniciar.total = Math.max(0, teamReiniciar.total + cantidad); 
         }
         emitSalvarUpdate(io);
         if (cantidad > 0) io.emit('poder_salvar', { side: data.equipo === 1 ? 'salvar' : 'reiniciar', amount: cantidad });
@@ -859,13 +1095,10 @@ io.on('connection', (socket) => {
         if (cantidad === 0) return;
 
         if (data.equipo === 1) { 
-            teamSalvarUnidades.total += cantidad; 
-            if (teamSalvarUnidades.total < 0) teamSalvarUnidades.total = 0; 
+            teamSalvarUnidades.total = Math.max(0, teamSalvarUnidades.total + cantidad); 
             lastDonatorSalvarUnid = { name: 'MANUAL', avatar: '' };
-        } 
-        else if (data.equipo === 2) { 
-            teamReiniciarUnidades.total += cantidad; 
-            if (teamReiniciarUnidades.total < 0) teamReiniciarUnidades.total = 0; 
+        } else if (data.equipo === 2) { 
+            teamReiniciarUnidades.total = Math.max(0, teamReiniciarUnidades.total + cantidad); 
             lastDonatorReiniciarUnid = { name: 'MANUAL', avatar: '' };
         }
         emitSalvarUpdate(io);
@@ -877,44 +1110,54 @@ io.on('connection', (socket) => {
         if (cantidad === 0) return;
 
         if (data.equipo === 1) { 
-            teamSuperSalvarUnidades.total += cantidad; 
-            if (teamSuperSalvarUnidades.total < 0) teamSuperSalvarUnidades.total = 0; 
+            teamSuperSalvarUnidades.total = Math.max(0, teamSuperSalvarUnidades.total + cantidad); 
             lastDonatorSuperSalvar = { name: 'MANUAL', avatar: '' };
-        } 
-        else if (data.equipo === 2) { 
-            teamSuperReiniciarUnidades.total += cantidad; 
-            if (teamSuperReiniciarUnidades.total < 0) teamSuperReiniciarUnidades.total = 0; 
+        } else if (data.equipo === 2) { 
+            teamSuperReiniciarUnidades.total = Math.max(0, teamSuperReiniciarUnidades.total + cantidad); 
             lastDonatorSuperReiniciar = { name: 'MANUAL', avatar: '' };
         }
         emitSalvarUpdate(io);
-        if (cantidad > 0) io.emit('poder_salvar_unidades', { side: data.equipo === 1 ? 'salvar' : 'reiniciar', amount: cantidad * 5 });
+        if (cantidad > 0) io.emit('poder_salvar_unidades', { side: data.equipo === 1 ? 'salvar' : 'reiniciar', amount: cantidad });
     });
 
     socket.on('importar_catalogo', (nuevoData) => {
-        if (Array.isArray(nuevoData)) {
-            nuevoData.forEach(item => { let idx = catalogoGlobal.findIndex(g => g.id === item.id); if (idx === -1) catalogoGlobal.push(item); else catalogoGlobal[idx] = { ...catalogoGlobal[idx], ...item }; });
-            catalogoGlobal.sort((a, b) => a.diamonds - b.diamonds); configGlobal.regalosDisponibles = catalogoGlobal;
-            guardarEnArchivo(); io.emit('config_actual', configGlobal);
-        }
+        if (Array.isArray(nuevoData)) guardarListaRegalosEnCatalogo(nuevoData);
     });
+
     socket.on('importar_historial', (nuevoData) => {
         if (typeof nuevoData === 'object' && nuevoData !== null && !Array.isArray(nuevoData)) {
             let userActivo = configGlobal.username;
+            delete nuevoData.racha;
+            if (nuevoData.topLikes) delete nuevoData.topLikes.currentRound;
+            if (nuevoData.topVIP) delete nuevoData.topVIP.currentRound;
             configGlobal = { ...configGlobal, ...nuevoData };
             if(userActivo) configGlobal.username = userActivo;
-            guardarEnArchivo(); io.emit('config_actual', configGlobal); io.emit('racha_versus_update', configGlobal.rachaVersus);
+            guardarEnArchivo(true);
+            io.emit('config_actual', configGlobal);
+            io.emit('racha_versus_update', configGlobal.rachaVersus);
+            io.emit('top_vip_data_update', getTopVIPPayload());
         }
     });
+
     socket.on('agregar_regalo_manual', (nuevoRegalo) => {
         let index = catalogoGlobal.findIndex(g => g.id === nuevoRegalo.id);
-        if (index === -1) catalogoGlobal.push(nuevoRegalo); else catalogoGlobal[index] = nuevoRegalo;
-        catalogoGlobal.sort((a, b) => a.diamonds - b.diamonds); configGlobal.regalosDisponibles = catalogoGlobal;
-        guardarEnArchivo(); io.emit('config_actual', configGlobal);
+        if (index === -1) catalogoGlobal.push(nuevoRegalo); else catalogoGlobal[index] = { ...catalogoGlobal[index], ...nuevoRegalo };
+        catalogoGlobal.sort((a, b) => a.diamonds - b.diamonds);
+        configGlobal.regalosDisponibles = catalogoGlobal;
+        sincronizarImagenesAsignadas();
+        guardarEnArchivo(true);
+        io.emit('catalogo_actualizado', catalogoGlobal);
+        io.emit('config_actual', configGlobal);
     });
+
     socket.on('eliminar_regalo_catalogo', (id) => {
-        catalogoGlobal = catalogoGlobal.filter(g => g.id !== id); configGlobal.regalosDisponibles = catalogoGlobal;
-        configGlobal.equipo1.regalos = configGlobal.equipo1.regalos.filter(g => g.id !== id); configGlobal.equipo2.regalos = configGlobal.equipo2.regalos.filter(g => g.id !== id);
-        guardarEnArchivo(); io.emit('config_actual', configGlobal);
+        catalogoGlobal = catalogoGlobal.filter(g => g.id !== id);
+        configGlobal.regalosDisponibles = catalogoGlobal;
+        configGlobal.equipo1.regalos = configGlobal.equipo1.regalos.filter(g => g.id !== id);
+        configGlobal.equipo2.regalos = configGlobal.equipo2.regalos.filter(g => g.id !== id);
+        guardarEnArchivo(true);
+        io.emit('catalogo_actualizado', catalogoGlobal);
+        io.emit('config_actual', configGlobal);
     });
     
     socket.on('reset', () => {
@@ -944,46 +1187,59 @@ io.on('connection', (socket) => {
         emitSalvarUpdate(io);
     });
 
+    // Racha Versus / Top Donadores Batalla Clásica (Equipo 1 y Equipo 2)
     socket.on('registrar_victoria_versus', (data) => {
         let tipo = data.tipo; let user = data.user;
         if(!user || !user.name || user.name === 'ESPERANDO' || user.name === 'MANUAL') return;
         let targetObj = tipo === 'salvada' ? configGlobal.rachaVersus.salvadas : configGlobal.rachaVersus.reinicios;
-        if(!targetObj[user.name]) targetObj[user.name] = { avatar: user.avatar, displayName: user.name, count: 0 };
-        targetObj[user.name].count += 1; targetObj[user.name].avatar = user.avatar;
-        guardarEnArchivo(); io.emit('racha_versus_update', configGlobal.rachaVersus);
+        if(!targetObj[user.name]) targetObj[user.name] = { avatar: user.avatar, displayName: user.name, count: 0, monedas: 0 };
+        targetObj[user.name].count += 1;
+        targetObj[user.name].monedas = (targetObj[user.name].monedas || 0) + (user.coins || 0);
+        targetObj[user.name].avatar = user.avatar;
+        guardarEnArchivo(true);
+        io.emit('racha_versus_update', configGlobal.rachaVersus);
     });
+
     socket.on('racha_versus_ajuste', (data) => {
         let targetObj = data.tipo === 'salvadas' ? configGlobal.rachaVersus.salvadas : configGlobal.rachaVersus.reinicios;
-        if(targetObj[data.name]) { targetObj[data.name].count += data.amount; if(targetObj[data.name].count < 0) targetObj[data.name].count = 0; guardarEnArchivo(); io.emit('racha_versus_update', configGlobal.rachaVersus); }
+        if(targetObj[data.name]) {
+            targetObj[data.name].count = Math.max(0, targetObj[data.name].count + data.amount);
+            guardarEnArchivo(true);
+            io.emit('racha_versus_update', configGlobal.rachaVersus);
+        }
     });
     socket.on('racha_versus_eliminar', (data) => {
         let targetObj = data.tipo === 'salvadas' ? configGlobal.rachaVersus.salvadas : configGlobal.rachaVersus.reinicios;
-        if(targetObj[data.name]) { delete targetObj[data.name]; guardarEnArchivo(); io.emit('racha_versus_update', configGlobal.rachaVersus); }
+        if(targetObj[data.name]) {
+            delete targetObj[data.name];
+            guardarEnArchivo(true);
+            io.emit('racha_versus_update', configGlobal.rachaVersus);
+        }
     });
     socket.on('racha_versus_limpiar', (tipo) => {
-        if(tipo === 'salvadas') configGlobal.rachaVersus.salvadas = {}; else configGlobal.rachaVersus.reinicios = {};
-        guardarEnArchivo(); io.emit('racha_versus_update', configGlobal.rachaVersus);
+        if(tipo === 'salvadas') configGlobal.rachaVersus.salvadas = {};
+        else configGlobal.rachaVersus.reinicios = {};
+        guardarEnArchivo(true);
+        io.emit('racha_versus_update', configGlobal.rachaVersus);
     });
     socket.on('racha_versus_guardar_opciones', (opts) => {
-        configGlobal.rachaVersus.showName = opts.showName; 
-        configGlobal.rachaVersus.showCount = opts.showCount; 
-        configGlobal.rachaVersus.showCoins = opts.showCoins;
-        guardarEnArchivo(); io.emit('racha_versus_update', configGlobal.rachaVersus);
+        configGlobal.rachaVersus.showName = opts.showName !== false; 
+        configGlobal.rachaVersus.showCount = opts.showCount !== false; 
+        configGlobal.rachaVersus.showCoins = opts.showCoins !== false;
+        configGlobal.rachaVersus.mirrorMode = !!opts.mirrorMode;
+        guardarEnArchivo(true);
+        io.emit('racha_versus_update', configGlobal.rachaVersus);
     });
     
     socket.on('racha_versus_clear_visual', () => {
+        teamSalvar.donators = {};
+        teamReiniciar.donators = {};
+        emitSalvarUpdate(io);
         io.emit('racha_versus_clear_visual');
     });
 
-    socket.on('test_ultimo_seguidor', () => {
-        ultimoSeguidorData = { name: "UsuarioPrueba", avatar: "https://via.placeholder.com/150/00f2fe/fff?text=TEST" };
-        io.emit('update_ultimo_seguidor', ultimoSeguidorData);
-    });
-
-    socket.on('test_ultimo_quiereme', () => {
-        ultimoQuieremeData = { name: "FanNumero1", avatar: "https://via.placeholder.com/150/ff0055/fff?text=TEST" };
-        io.emit('update_ultimo_quiereme', ultimoQuieremeData);
-    });
+    socket.on('test_ultimo_seguidor', () => { ultimoSeguidorData = { name: "UsuarioPrueba", avatar: "" }; io.emit('update_ultimo_seguidor', ultimoSeguidorData); });
+    socket.on('test_ultimo_quiereme', () => { ultimoQuieremeData = { name: "FanNumero1", avatar: "" }; io.emit('update_ultimo_quiereme', ultimoQuieremeData); });
 });
 
 setupGameEvents(io, configGlobal);

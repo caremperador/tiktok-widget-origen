@@ -85,6 +85,7 @@
             justify-content: center;
             animation: emerge 0.5s ease-out;
             font-family: 'Luckiest Guy', cursive !important;
+            transition: top 0.3s ease;
         }
         
         .countdown-line1 {
@@ -135,7 +136,6 @@
             transform: scaleY(0.92);
         }
 
-        /* Efecto de tembladera cuando llega de 5 a 0 */
         .countdown-number.timer-critical {
             animation: tenseTremble 0.12s infinite !important;
             color: #ff4d4d !important;
@@ -187,10 +187,10 @@
 
         <div class="status-zone" id="status-zone"></div>
 
-        <div class="core-block">
+        <div class="core-block" id="core-block">
             <div class="headers">
-                <div class="text-eq1" id="title-eq1">SALVAR (GG)</div>
-                <div class="text-eq2" id="title-eq2">REINICIAR (ROSA)</div>
+                <div class="text-eq1" id="title-eq1">SALVAR</div>
+                <div class="text-eq2" id="title-eq2">REINICIAR</div>
             </div>
 
             <div class="bar-bg">
@@ -276,6 +276,17 @@
         let latestData = { totalSalvar: 0, totalReiniciar: 0, topSalvar: { name: 'ESPERANDO', coins: 0, avatar: '' }, topReiniciar: { name: 'ESPERANDO', coins: 0, avatar: '' } }; 
         let winRegistered = false; 
 
+        function obtenerTextoAccion(numEquipo) {
+            if (!currentConfig) return numEquipo === 1 ? 'SALVAR' : 'RESET';
+            if (numEquipo === 1) {
+                let s1 = (currentConfig.equipo1?.sub || '').trim();
+                return (!s1 || s1.toUpperCase() === 'GG') ? 'SALVAR' : s1.toUpperCase();
+            } else {
+                let s2 = (currentConfig.equipo2?.sub || '').trim();
+                return (!s2 || s2.toUpperCase() === 'ROSA') ? 'RESET' : s2.toUpperCase();
+            }
+        }
+
         function obtenerIconoEquipo(numEquipo) {
             let fallback = numEquipo === 1 ? DEFAULT_GG_ICON : DEFAULT_ROSE_ICON;
             if (!currentConfig) return fallback;
@@ -308,7 +319,6 @@
             const iconoUrl = obtenerIconoEquipo(numEquipo);
             const fallbackUrl = numEquipo === 1 ? DEFAULT_GG_ICON : DEFAULT_ROSE_ICON;
 
-            // Si la cantidad es 1, no ponemos el número (el icono ya representa 1 unidad)
             const numeroHtml = cantidad > 1 ? `<span class="line1-num">${cantidad}</span>` : '';
 
             l1.innerHTML = `
@@ -442,7 +452,6 @@
             if (latestData) procesarActualizacionVisual(latestData);
         }
 
-        // Muestra por defecto "[Rosa] = RESET" sin el número 1
         renderizarLinea1(1, 2, 'RESET', '#ffffff');
 
         socket.on('config_actual', (config) => {
@@ -457,6 +466,11 @@
             document.getElementById('heroes-row').style.display = config.showTopDonators !== false ? 'flex' : 'none';
             document.getElementById('donatorCoins1').style.display = config.showDonatorCoins ? 'inline' : 'none';
             document.getElementById('donatorCoins2').style.display = config.showDonatorCoins ? 'inline' : 'none';
+
+            // Ocultar o mostrar la barra de poderes
+            const hideBar = (config.battleStyle && config.battleStyle.hidePowerBar !== undefined) ? config.battleStyle.hidePowerBar : (config.hidePowerBar || false);
+            document.getElementById('core-block').style.display = hideBar ? 'none' : 'flex';
+            document.getElementById('countdown-display').style.top = hideBar ? '45%' : '57%';
 
             applyDesign(config.battleStyle, {c1: config.equipo1.color, c2: config.equipo2.color});
         });
@@ -658,7 +672,7 @@
             }
 
             let statusZone = document.getElementById('status-zone');
-            let nombreLlamativoEq1 = currentConfig.equipo1.sub.trim() ? currentConfig.equipo1.sub.trim() : currentConfig.equipo1.nombre;
+            let nombreLlamativoEq1 = obtenerTextoAccion(1);
 
             if (total === 0 || currentConfig.showTopText === false) {
                 statusZone.style.display = 'none';
@@ -686,13 +700,13 @@
             let line1 = document.getElementById('countdown-line1-text');
             let timerEl = document.getElementById('timer');
             
-            // CASO 1: Ganando Reiniciar -> Muestra "[GG] = SALVAR" (o "2 [GG] = SALVAR") + Cuenta Regresiva
+            // CASO 1: Ganando Reiniciar -> Muestra "[GG] = SALVAR" + Cuenta Regresiva
             if (data.totalReiniciar > data.totalSalvar) {
                 let diff = data.totalReiniciar - data.totalSalvar;
                 let colorL1 = currentConfig.battleStyle?.colorL1;
                 let colorSalvar = (!colorL1 || colorL1.toLowerCase() === '#ffd700' || colorL1.toLowerCase() === '#ffea00') ? '#ff5e5e' : colorL1;
 
-                renderizarLinea1(diff, 1, 'SALVAR', colorSalvar);
+                renderizarLinea1(diff, 1, obtenerTextoAccion(1), colorSalvar);
                 line1.style.display = 'flex';
                 countdownDisplay.style.display = 'flex'; 
 
@@ -708,12 +722,12 @@
                     timerEl.style.display = 'none';
                 }
             } 
-            // CASO 2: Por defecto (0 - 0), empate o ganando Salvar -> Muestra "[Rosa] = RESET" (o "X [Rosa] = RESET")
+            // CASO 2: Por defecto (0 - 0), empate o ganando Salvar -> Muestra "[Rosa] = RESET"
             else {
                 let diff = (data.totalSalvar - data.totalReiniciar) + 1;
                 detenerCuentaRegresiva();
                 
-                renderizarLinea1(diff, 2, 'RESET', '#ffffff');
+                renderizarLinea1(diff, 2, obtenerTextoAccion(2), '#ffffff');
                 
                 line1.style.display = 'flex';
                 timerEl.style.display = 'none';
@@ -733,6 +747,8 @@
 
         socket.on('poder_salvar', (data) => {
             playCoinSound(); 
+            const hideBar = (currentConfig?.battleStyle?.hidePowerBar !== undefined) ? currentConfig.battleStyle.hidePowerBar : (currentConfig?.hidePowerBar || false);
+            if (hideBar) return; 
             let x = canvas.width / 2; let color = 'white'; let y = canvas.height / 2; 
             if(data.side === 'salvar') {
                 document.getElementById('bar1').style.filter = "brightness(1.5)"; setTimeout(() => document.getElementById('bar1').style.filter = "none", 150);
