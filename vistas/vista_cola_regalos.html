@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #0b0b0f; color: #f0f0f5; font-family: 'Segoe UI', system-ui, sans-serif; padding: 30px; margin: 0; }
+        .box { background: #14141d; border: 1px solid #282836; border-radius: 14px; padding: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); max-width: 1020px; margin: 0 auto 25px auto; }
+        h3 { color: #00f2fe; margin-top: 0; border-bottom: 1px solid #262635; padding-bottom: 12px; font-size: 17px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .top-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; background: #1a1a26; padding: 18px; border-radius: 12px; border: 1px solid #2d2d3f; margin-bottom: 22px; }
+        .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; }
+        input[type="text"], input[type="number"], select { width: 100%; background: #0c0c12; color: #fff; border: 1px solid #38384d; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; box-sizing: border-box; }
+        input:focus, select:focus { border-color: #00f2fe; outline: none; }
+
+        .check-pill { display: flex; align-items: center; gap: 10px; background: #111119; padding: 10px 14px; border-radius: 8px; border: 1px solid #323248; cursor: pointer; font-size: 13px; font-weight: 700; color: #fff; height: 100%; box-sizing: border-box; }
+        .check-pill input { width: 18px; height: 18px; accent-color: #00ff66; cursor: pointer; margin: 0; }
+
+        .layout-cols { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+        .col-config { flex: 1; min-width: 340px; background: #191924; border: 1px solid #2c2c3c; border-radius: 12px; padding: 20px; }
+        .col-queue { flex: 1.25; min-width: 360px; background: #191924; border: 1px solid #00f2fe; border-radius: 12px; padding: 20px; }
+
+        /* Buscador de regalos */
+        .gift-picker-box { background: #0f0f17; border: 1px solid #323248; border-radius: 10px; padding: 10px; margin-top: 8px; }
+        .gift-Picker-list { max-height: 210px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-right: 4px; }
+        .gift-Picker-list::-webkit-scrollbar { width: 6px; }
+        .gift-Picker-list::-webkit-scrollbar-thumb { background: #3a3a52; border-radius: 6px; }
+        .gift-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-radius: 8px; background: #171723; border: 1px solid #29293d; }
+        .gift-row.assigned { border-color: #00ff66; background: rgba(0, 255, 102, 0.08); }
+        .gift-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+        .gift-left img { width: 34px; height: 34px; object-fit: contain; border-radius: 6px; background: #08080c; padding: 2px; border: 1px solid #333; flex-shrink: 0; }
+        .gift-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gift-coins { font-size: 11px; color: #ffd700; font-weight: 700; }
+
+        .action-input-inline { width: 125px !important; padding: 7px 9px !important; font-size: 12.5px !important; font-weight: 700; color: #00ff66 !important; border-color: #00ff66 !important; text-transform: uppercase; }
+        .btn-assign { background: #00f2fe; color: #000; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 800; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        .btn-assign:hover { filter: brightness(1.15); }
+
+        /* Regalos configurados */
+        .configured-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+        .conf-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #101018; border: 1px solid #383850; padding: 8px 12px; border-radius: 8px; }
+        .conf-item img { width: 32px; height: 32px; object-fit: contain; background: #000; border-radius: 6px; padding: 2px; }
+        .conf-action-badge { background: rgba(0, 255, 102, 0.15); color: #00ff66; border: 1px solid #00ff66; padding: 3px 10px; border-radius: 6px; font-weight: 900; font-size: 12.5px; text-transform: uppercase; }
+        .btn-del { background: none; border: none; color: #ff3355; cursor: pointer; font-size: 15px; padding: 4px; }
+
+        /* Cola de pedidos en vivo */
+        .queue-list { display: flex; flex-direction: column; gap: 10px; max-height: 470px; overflow-y: auto; padding-right: 4px; }
+        .queue-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #111119; border: 1px solid #2e2e42; border-left: 4px solid #00f2fe; border-radius: 10px; padding: 10px 14px; transition: all 0.2s; }
+        .queue-card.done { opacity: 0.45; border-left-color: #00ff66; background: #0c1711; text-decoration: line-through; }
+        .q-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+        .q-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #00f2fe; flex-shrink: 0; }
+        .q-gift-img { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+        .q-user { font-size: 13.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .q-action { font-size: 13px; font-weight: 900; color: #00ff66; text-transform: uppercase; }
+        .q-qty { background: #ffea00; color: #000; font-weight: 900; font-size: 13px; padding: 2px 8px; border-radius: 6px; }
+
+        .btn-check-done { width: 38px; height: 38px; border-radius: 8px; border: 2px solid #00ff66; background: rgba(0, 255, 102, 0.12); color: #00ff66; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.15s; flex-shrink: 0; }
+        .btn-check-done:hover { background: #00ff66; color: #000; transform: scale(1.06); }
+
+        .btn-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-top { padding: 10px 15px; border-radius: 8px; font-weight: 800; font-size: 13px; cursor: pointer; border: 1px solid #00f2fe; background: #1a1a26; color: #00f2fe; display: flex; align-items: center; gap: 8px; }
+        .btn-top:hover { background: #00f2fe; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h3>
+            <span><i class="fa-solid fa-list-check"></i> Cola de Pedidos y Regalos en Vivo</span>
+            <div class="btn-bar">
+                <button class="btn-top" style="border-color:#ffaa00; color:#ffaa00;" onclick="simularPedido()"><i class="fa-solid fa-flask"></i> Probar Pedido Demo</button>
+                <button class="btn-top" style="border-color:#00ff66; color:#00ff66;" onclick="window.open('/cola_regalos', '_blank')"><i class="fa-solid fa-eye"></i> Abrir Overlay</button>
+                <button class="btn-top" onclick="copiarURL()"><i class="fa-solid fa-link"></i> Copiar URL OBS</button>
+            </div>
+        </h3>
+
+        <div class="top-controls">
+            <div class="ctrl-group">
+                <label><i class="fa-solid fa-sort"></i> Orden de la Lista</label>
+                <select id="cfg-sort" onchange="guardarConfigCola()">
+                    <option value="oldest">⏳ Más Antiguo a Más Reciente (Orden de llegada)</option>
+                    <option value="newest">⚡ Más Reciente a Más Antiguo (Últimos arriba)</option>
+                </select>
+            </div>
+
+            <div class="ctrl-group">
+                <label><i class="fa-solid fa-clock"></i>Modo de Tachado</label>
+                <label class="check-pill">
+                    <input type="checkbox" id="cfg-auto-remove" onchange="guardarConfigCola()">
+                    <span>Auto-tachar por tiempo</span>
+                </label>
+            </div>
+
+            <div class="ctrl-group">
+                <label><i class="fa-solid fa-hourglass-half"></i> Segundos para Auto-tachar</label>
+                <input type="number" id="cfg-auto-sec" min="3" max="600" value="20" onchange="guardarConfigCola()">
+            </div>
+
+            <div class="ctrl-group">
+                <label><i class="fa-solid fa-layer-group"></i> Máximo Visibles en OBS</label>
+                <input type="number" id="cfg-max-vis" min="1" max="15" value="6" onchange="guardarConfigCola()">
+            </div>
+        </div>
+
+        <div class="layout-cols">
+            <!-- COLUMNA IZQUIERDA: CONFIGURAR QUÉ REGALOS ENTRAN A LA LISTA Y SU ACCIÓN -->
+            <div class="col-config">
+                <h4 style="margin:0 0 10px 0; color:#ffd700; text-transform:uppercase; font-size:14px;">
+                    <i class="fa-solid fa-sliders"></i> 1. Regalos Permitidos y su Acción
+                </h4>
+                <p style="font-size:12px; color:#aaa; margin:0 0 12px 0;">
+                    Solo los regalos que agregues aquí aparecerán en el overlay. Ponle a cada uno qué significa (ej. <b>BATE</b>, <b>SANDÍA</b>, <b>SALVAR</b>).
+                </p>
+
+                <div class="gift-picker-box">
+                    <input type="text" id="search-gift" placeholder="🔍 Buscar regalo (ej. Rose, GG, Dona)..." oninput="renderCatalogoPicker()">
+                    <div class="gift-Picker-list" id="picker-list"></div>
+                </div>
+
+                <label style="margin-top:16px; color:#00ff66;">Regalos Activos en tu Lista (<span id="count-configured">0</span>):</label>
+                <div class="configured-list" id="configured-list"></div>
+            </div>
+
+            <!-- COLUMNA DERECHA: COLA EN VIVO PARA TACHAR CON CHECK -->
+            <div class="col-queue">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h4 style="margin:0; color:#00f2fe; text-transform:uppercase; font-size:14px;">
+                        <i class="fa-solid fa-bolt"></i> 2. Pedidos por Atender (<span id="count-queue">0</span>)
+                    </h4>
+                    <button onclick="limpiarColaCompleta()" style="background:#ff003c; color:#fff; border:none; padding:7px 12px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer;">
+                        <i class="fa-solid fa-trash-can"></i> Limpiar Lista
+                    </button>
+                </div>
+
+                <div class="queue-list" id="queue-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const FALLBACK_ICON = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%23181824'/><text x='50%' y='58%' text-anchor='middle' fill='%23ffd700' font-size='20'>🎁</text></svg>";
+
+        let globalGifts = [];
+        let regalosConfigurados = []; // [{ id, name, diamonds, image, actionText }]
+        let colaActual = [];
+        let sortOrder = 'oldest';
+
+        function obtenerImg(g) {
+            if (!g) return FALLBACK_ICON;
+            if (g.image && g.image.trim() !== "") return g.image;
+            const enCat = globalGifts.find(x => Number(x.id) === Number(g.id));
+            return (enCat && enCat.image && enCat.image.trim() !== "") ? enCat.image : FALLBACK_ICON;
+        }
+
+        function renderCatalogoPicker() {
+            const q = (document.getElementById('search-gift').value || "").toLowerCase().trim();
+            const container = document.getElementById('picker-list');
+
+            let filtrados = globalGifts.filter(g => {
+                if (!q) return true;
+                return (g.name && g.name.toLowerCase().includes(q)) || String(g.id).includes(q) || String(g.diamonds) === q;
+            });
+
+            filtrados.sort((a, b) => (a.diamonds - b.diamonds) || (a.id - b.id));
+
+            let html = '';
+            filtrados.slice(0, 80).forEach(g => {
+                const existente = regalosConfigurados.find(r => Number(r.id) === Number(g.id));
+                const valorAccion = existente ? existente.actionText : "";
+                const imgUrl = obtenerImg(g);
+
+                html += `
+                    <div class="gift-row ${existente ? 'assigned' : ''}">
+                        <div class="gift-left">
+                            <img src="${imgUrl}" referrerpolicy="no-referrer" onerror="this.src='${FALLBACK_ICON}'">
+                            <div style="min-width:0;">
+                                <div class="gift-name">${g.name}</div>
+                                <div class="gift-coins"><i class="fa-solid fa-coins"></i> ${g.diamonds} • ID: ${g.id}</div>
+                            </div>
+                        </div>
+                        <input type="text" id="act-inp-${g.id}" class="action-input-inline" placeholder="Ej: BATE" value="${valorAccion}">
+                        <button class="btn-assign" onclick="asignarRegaloCola(${g.id})">
+                            ${existente ? '<i class="fa-solid fa-check"></i> Actualizar' : '+ Añadir'}
+                        </button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html || `<div style="text-align:center; color:#777; padding:12px; font-size:12px;">Sin resultados</div>`;
+        }
+
+        function renderRegalosConfigurados() {
+            const container = document.getElementById('configured-list');
+            document.getElementById('count-configured').innerText = regalosConfigurados.length;
+
+            if (regalosConfigurados.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#666; padding:15px; font-size:12.5px; border:1px dashed #333; border-radius:8px;">Aún no has asignado regalos para la cola.</div>`;
+                return;
+            }
+
+            container.innerHTML = regalosConfigurados.map(r => `
+                <div class="conf-item">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                        <img src="${obtenerImg(r)}" referrerpolicy="no-referrer" onerror="this.src='${FALLBACK_ICON}'">
+                        <div>
+                            <div style="font-weight:800; font-size:13px; color:#fff;">${r.name}</div>
+                            <div style="font-size:11px; color:#ffd700;"><i class="fa-solid fa-coins"></i> ${r.diamonds}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:#888; font-weight:bold;">=</span>
+                        <span class="conf-action-badge">${r.actionText}</span>
+                        <button class="btn-del" onclick="quitarRegaloCola(${r.id})" title="Quitar de la lista"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function asignarRegaloCola(id) {
+            const gift = globalGifts.find(g => Number(g.id) === Number(id));
+            if (!gift) return;
+
+            const inp = document.getElementById(`act-inp-${id}`);
+            const actionText = (inp && inp.value.trim() !== "") ? inp.value.trim().toUpperCase() : gift.name.toUpperCase();
+
+            const idx = regalosConfigurados.findIndex(r => Number(r.id) === Number(id));
+            const obj = {
+                id: gift.id,
+                name: gift.name,
+                diamonds: gift.diamonds,
+                image: obtenerImg(gift),
+                actionText: actionText
+            };
+
+            if (idx === -1) regalosConfigurados.push(obj);
+            else regalosConfigurados[idx] = obj;
+
+            renderRegalosConfigurados();
+            renderCatalogoPicker();
+            guardarConfigCola();
+        }
+
+        function quitarRegaloCola(id) {
+            regalosConfigurados = regalosConfigurados.filter(r => Number(r.id) !== Number(id));
+            renderRegalosConfigurados();
+            renderCatalogoPicker();
+            guardarConfigCola();
+        }
+
+        function renderColaEnVivo() {
+            const container = document.getElementById('queue-list');
+            let lista = [...colaActual];
+
+            if (sortOrder === 'newest') {
+                lista.sort((a, b) => b.timestamp - a.timestamp);
+            } else {
+                lista.sort((a, b) => a.timestamp - b.timestamp);
+            }
+
+            document.getElementById('count-queue').innerText = lista.filter(i => !i.completed).length;
+
+            if (lista.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#666; padding:35px 15px; font-size:13px;">No hay pedidos pendientes en la cola.</div>`;
+                return;
+            }
+
+            container.innerHTML = lista.map((item, idx) => `
+                <div class="queue-card ${item.completed ? 'done' : ''}">
+                    <div class="q-left">
+                        <span style="font-weight:900; color:#888; font-size:12px; width:22px;">#${idx + 1}</span>
+                        <img src="${item.avatar || FALLBACK_ICON}" class="q-avatar" onerror="this.src='${FALLBACK_ICON}'">
+                        <div style="min-width:0; flex:1;">
+                            <div class="q-user">${item.userName}</div>
+                            <div class="q-action"><i class="fa-solid fa-bolt"></i> ${item.actionText}</div>
+                        </div>
+                        <img src="${item.giftImage || FALLBACK_ICON}" class="q-gift-img" referrerpolicy="no-referrer" onerror="this.src='${FALLBACK_ICON}'">
+                        <span class="q-qty">x${item.count}</span>
+                    </div>
+                    <button class="btn-check-done" onclick="marcarListo('${item.uid}')" title="Marcar como completado / Tachar">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function guardarConfigCola() {
+            sortOrder = document.getElementById('cfg-sort').value || 'oldest';
+            socket.emit('cola_regalos_guardar_config', {
+                sortOrder: sortOrder,
+                autoRemove: document.getElementById('cfg-auto-remove').checked,
+                autoRemoveSeconds: parseInt(document.getElementById('cfg-auto-sec').value) || 20,
+                maxVisible: parseInt(document.getElementById('cfg-max-vis').value) || 6,
+                regalosConfigurados: regalosConfigurados
+            });
+            renderColaEnVivo();
+        }
+
+        function marcarListo(uid) {
+            socket.emit('cola_regalos_tachar', uid);
+        }
+
+        function limpiarColaCompleta() {
+            socket.emit('cola_regalos_limpiar');
+        }
+
+        function simularPedido() {
+            socket.emit('cola_regalos_test');
+        }
+
+        socket.on('config_actual', (config) => {
+            globalGifts = config.regalosDisponibles || [];
+            if (config.colaRegalos) {
+                sortOrder = config.colaRegalos.sortOrder || 'oldest';
+                document.getElementById('cfg-sort').value = sortOrder;
+                document.getElementById('cfg-auto-remove').checked = !!config.colaRegalos.autoRemove;
+                document.getElementById('cfg-auto-sec').value = config.colaRegalos.autoRemoveSeconds || 20;
+                document.getElementById('cfg-max-vis').value = config.colaRegalos.maxVisible || 6;
+                regalosConfigurados = config.colaRegalos.regalosConfigurados || [];
+            }
+            renderRegalosConfigurados();
+            renderCatalogoPicker();
+        });
+
+        socket.on('catalogo_actualizado', (cat) => {
+            if (Array.isArray(cat)) {
+                globalGifts = cat;
+                renderRegalosConfigurados();
+                renderCatalogoPicker();
+            }
+        });
+
+        socket.on('cola_regalos_update', (data) => {
+            if (!data) return;
+            colaActual = data.queue || [];
+            if (data.config && data.config.sortOrder) {
+                sortOrder = data.config.sortOrder;
+            }
+            renderColaEnVivo();
+        });
+
+        function copiarURL() {
+            navigator.clipboard.writeText(window.location.origin + '/cola_regalos');
+            alert("✅ Enlace copiado: " + window.location.origin + "/cola_regalos");
+        }
+    </script>
+</body>
+</html>
