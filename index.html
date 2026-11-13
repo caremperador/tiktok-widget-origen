@@ -6,34 +6,46 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { margin: 0; display: flex; height: 100vh; background: #0f0f13; color: #eee; font-family: 'Segoe UI', sans-serif; overflow: hidden;}
-        .sidebar { width: 260px; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        .sidebar { width: 260px; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0; }
         .logo { padding: 25px 20px 5px 20px; font-size: 22px; font-weight: 900; color: #00f2fe; text-transform: uppercase; text-align: center; letter-spacing: 1px;}
         .sidebar-status { text-align: center; font-size: 11px; font-weight: bold; margin-bottom: 10px; padding-bottom: 15px; border-bottom: 1px solid #333; color: #ff003c; text-transform: uppercase; letter-spacing: 1px;}
         
-        .menu-group { padding: 15px 15px 5px 15px; font-size: 12px; color: #888; text-transform: uppercase; font-weight: bold;}
-        .menu-item { margin: 5px 15px; padding: 12px 15px; cursor: pointer; border-radius: 8px; font-size: 14px; color: #ccc; transition: 0.2s; display: flex; align-items: center; gap: 10px;}
+        .menu-group { padding: 14px 15px 4px 15px; font-size: 11.5px; color: #888; text-transform: uppercase; font-weight: bold;}
+        .menu-item { margin: 3px 15px; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-size: 13.5px; color: #ccc; transition: 0.2s; display: flex; align-items: center; gap: 10px;}
         .menu-item:hover { background: #2a2a2a; color: #fff;}
         .menu-item.active { background: linear-gradient(90deg, #00f2fe22, transparent); color: #00f2fe; border-left: 4px solid #00f2fe; border-radius: 0 8px 8px 0; font-weight: bold;}
         
         .loaded-dot { width: 6px; height: 6px; background-color: #00ff66; border-radius: 50%; margin-left: auto; display: none; box-shadow: 0 0 5px #00ff66;}
         .menu-item.is-loaded .loaded-dot { display: block; }
 
-        .sidebar-version { margin-top: auto; padding: 20px; text-align: center; font-size: 12px; color: #555; font-weight: bold; border-top: 1px solid #333;}
-        .content { flex: 1; position: relative; background: #0f0f13;}
-        .tab-content { display: none; width: 100%; height: 100%; border: none; }
-        .tab-content.active { display: block; }
+        .sidebar-version { margin-top: auto; padding: 14px; text-align: center; font-size: 12px; color: #555; font-weight: bold; border-top: 1px solid #333;}
         
-        .conexion-wrapper { padding: 40px; }
-        .status-bar { background: #000; padding: 15px; border-radius: 8px; border: 1px solid #444; font-family: monospace; font-size: 16px; margin-bottom: 20px; color: #ccc; text-align: center; max-width: 800px; font-weight: bold;}
-        .box { background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-width: 800px;}
+        .content { flex: 1; position: relative; background: #0f0f13; height: 100vh; overflow: hidden; }
+        .tab-content { display: none !important; width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
+        .tab-content.active { display: block !important; z-index: 5; }
+        
+        .conexion-wrapper { padding: 40px; box-sizing: border-box; overflow-y: auto; }
+        .status-bar { background: #000; padding: 15px; border-radius: 8px; border: 1px solid #444; font-family: monospace; font-size: 16px; margin-bottom: 20px; color: #ccc; text-align: center; max-width: 850px; font-weight: bold;}
+        .box { background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-width: 850px; margin-bottom: 25px;}
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; color: #ffd700;}
         input[type="text"] { width: 100%; background: #000; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 14px; box-sizing: border-box; margin-bottom: 15px;}
         input:focus { outline: none; border-color: #00f2fe; }
-        .btn-play { background: #00ff66; color: black; font-weight: bold; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
-        .btn-stop { background: #ff003c; color: white; font-weight: bold; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
+        .btn-play { background: #00ff66; color: black; font-weight: bold; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
+        .btn-stop { background: #ff003c; color: white; font-weight: bold; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
+        .btn-scan { background: #00f2fe; color: black; font-weight: bold; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
         .history-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
         .chip { background: #333; padding: 8px 15px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: 0.2s; border: 1px solid #555; }
         .chip:hover { background: #00f2fe; color: black; border-color: #00f2fe; }
+
+        .detected-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px;}
+        .btn-save-all { background: linear-gradient(135deg, #00ff66, #00b84c); color: #04140a; font-weight: 900; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,255,102,0.3); }
+        .gifts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; max-height: 360px; overflow-y: auto; padding: 8px; background: #101017; border-radius: 8px; border: 1px solid #2b2b3a; }
+        .gift-card { background: #1a1a26; border: 1px solid #2f2f42; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px; }
+        .gift-card img { width: 42px; height: 42px; object-fit: contain; background: #0b0b10; border-radius: 6px; padding: 3px; border: 1px solid #333; }
+        .gift-info { overflow: hidden; }
+        .gift-name { font-size: 12.5px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+        .gift-coins { font-size: 11.5px; color: #ffd700; font-weight: 800; margin-top: 2px; }
+        .gift-id { font-size: 10px; color: #777; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -48,6 +60,7 @@
         <div class="menu-item" onclick="showTab('tab-backup', this)"><i class="fa-solid fa-cloud-arrow-down"></i> Gestor de Backup <div class="loaded-dot"></div></div>
         
         <div class="menu-group">Overlays Web</div>
+        <div class="menu-item" onclick="showTab('tab-cola-regalos', this)"><i class="fa-solid fa-list-check" style="color:#00ff66;"></i> Cola de Pedidos <div class="loaded-dot"></div></div>
         <div class="menu-item" onclick="showTab('tab-batalla', this)"><i class="fa-solid fa-khanda"></i> Batalla Clásica <div class="loaded-dot"></div></div>
         <div class="menu-item" onclick="showTab('tab-batalla-unidades', this)"><i class="fa-solid fa-cube"></i> Batalla Unidades <div class="loaded-dot"></div></div>
         <div class="menu-item" onclick="showTab('tab-racha-versus', this)"><i class="fa-solid fa-shield-halved"></i> Racha Versus <div class="loaded-dot"></div></div>
@@ -55,8 +68,6 @@
         <div class="menu-item" onclick="showTab('tab-top-vip', this)"><i class="fa-solid fa-gem"></i> Top Donadores <div class="loaded-dot"></div></div>
         <div class="menu-item" onclick="showTab('tab-metalikes', this)"><i class="fa-solid fa-thumbs-up"></i> Meta de Likes <div class="loaded-dot"></div></div>
         <div class="menu-item" onclick="showTab('tab-wins-ruleta', this)"><i class="fa-solid fa-gamepad"></i> Wins Ruleta <div class="loaded-dot"></div></div>
-        
-        <!-- 🌟 NUEVO BOTÓN: SALÓN DE LA FAMA -->
         <div class="menu-item" onclick="showTab('tab-salon-fama', this)"><i class="fa-solid fa-star"></i> Salón de la Fama <div class="loaded-dot"></div></div>
 
         <div class="menu-group">Juegos Interactivos</div>
@@ -71,16 +82,32 @@
             <div class="box">
                 <label>👤 Cuenta de TikTok a monitorear</label>
                 <input type="text" id="input-usuario" placeholder="Ej. teamgatitos">
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-play" onclick="conectar()"><i class="fa-solid fa-play"></i> Conectar</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-play" onclick="conectar()"><i class="fa-solid fa-play"></i> Conectar y Cargar Regalos</button>
+                    <button class="btn-scan" onclick="escanearRegalosManual()"><i class="fa-solid fa-wand-magic-sparkles"></i> Escanear Regalos Ahora</button>
                     <button class="btn-stop" onclick="desconectar()"><i class="fa-solid fa-stop"></i> Parar</button>
                 </div>
                 
                 <label style="margin-top: 30px; color: #ccc;"><i class="fa-solid fa-clock-rotate-left"></i> Historial de Testeo</label>
                 <div class="history-chips" id="historial-lista"></div>
             </div>
+
+            <div class="box" id="box-regalos-detectados" style="display: none;">
+                <div class="detected-header">
+                    <div>
+                        <h3 style="margin: 0; color: #00f2fe;"><i class="fa-solid fa-gifts"></i> Regalos Disponibles en esta Cuenta (<span id="count-detectados">0</span>)</h3>
+                        <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #aaa;">Lista oficial cargada directamente desde TikTok.</p>
+                    </div>
+                    <button class="btn-save-all" onclick="guardarTodosEnBD()">
+                        <i class="fa-solid fa-database"></i> Guardar Todos en Base de Datos
+                    </button>
+                </div>
+                <p id="msg-guardado-bd" style="display:none; color:#00ff66; font-weight:bold; text-align:center; background:#002b11; padding:10px; border-radius:6px; border:1px solid #00ff66;"></p>
+                <div class="gifts-grid" id="grid-detectados"></div>
+            </div>
         </div>
 
+        <iframe id="tab-cola-regalos" class="tab-content" data-src="/vista_cola_regalos"></iframe>
         <iframe id="tab-batalla" class="tab-content" data-src="/vista_versus"></iframe>
         <iframe id="tab-batalla-unidades" class="tab-content" data-src="/vista_versus_unidades"></iframe>
         <iframe id="tab-racha-versus" class="tab-content" data-src="/vista_racha_versus"></iframe>
@@ -92,8 +119,6 @@
         <iframe id="tab-bolita" class="tab-content" data-src="/vista_bolita_globos"></iframe>
         <iframe id="tab-backup" class="tab-content" data-src="/vista_backup"></iframe>
         <iframe id="tab-wins-ruleta" class="tab-content" data-src="/vista_wins_ruleta"></iframe>
-        
-        <!-- 🌟 NUEVO IFRAME: SALÓN DE LA FAMA -->
         <iframe id="tab-salon-fama" class="tab-content" data-src="/vista_salon_fama"></iframe>
     </div>
 
@@ -103,17 +128,22 @@
         const inputUsuario = document.getElementById('input-usuario');
         const estadoBar = document.getElementById('conexion-estado');
         const sidebarStatus = document.getElementById('sidebar-status');
+        let regalosDetectadosActuales = [];
 
         function showTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
             
             let targetTab = document.getElementById(id);
+            if (!targetTab) return;
             targetTab.classList.add('active');
             el.classList.add('active');
 
-            if (targetTab.tagName === 'IFRAME' && !targetTab.getAttribute('src')) {
-                targetTab.setAttribute('src', targetTab.getAttribute('data-src'));
+            if (targetTab.tagName === 'IFRAME') {
+                const expectedSrc = targetTab.getAttribute('data-src');
+                if (targetTab.getAttribute('src') !== expectedSrc) {
+                    targetTab.setAttribute('src', expectedSrc);
+                }
                 el.classList.add('is-loaded'); 
             }
         }
@@ -152,8 +182,40 @@
             }
         });
 
+        socket.on('regalos_cuenta_detectados', (data) => {
+            regalosDetectadosActuales = data.regalos || [];
+            document.getElementById('count-detectados').innerText = regalosDetectadosActuales.length;
+            document.getElementById('box-regalos-detectados').style.display = regalosDetectadosActuales.length > 0 ? 'block' : 'none';
+
+            const grid = document.getElementById('grid-detectados');
+            grid.innerHTML = '';
+            regalosDetectadosActuales.forEach(g => {
+                grid.innerHTML += `
+                    <div class="gift-card">
+                        <img src="${g.image || ''}" referrerpolicy="no-referrer" alt="${g.name}">
+                        <div class="gift-info">
+                            <div class="gift-name" title="${g.name}">${g.name}</div>
+                            <div class="gift-coins"><i class="fa-solid fa-coins"></i> ${g.diamonds}</div>
+                            <div class="gift-id">ID: ${g.id}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        socket.on('resultado_guardar_regalos', (res) => {
+            const msgBox = document.getElementById('msg-guardado-bd');
+            msgBox.style.display = 'block';
+            msgBox.style.color = res.ok ? '#00ff66' : '#ffaa00';
+            msgBox.style.borderColor = res.ok ? '#00ff66' : '#ffaa00';
+            msgBox.innerText = res.msg;
+            setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+        });
+
         function conectar() { if(inputUsuario.value.trim() !== "") socket.emit('comando_conectar', inputUsuario.value); }
         function desconectar() { socket.emit('comando_desconectar'); }
+        function escanearRegalosManual() { socket.emit('escanear_regalos_tiktok', inputUsuario.value); }
+        function guardarTodosEnBD() { socket.emit('guardar_regalos_detectados', regalosDetectadosActuales); }
     </script>
 </body>
 </html>
