@@ -21,6 +21,7 @@ const pathCatalogo = path.join(__dirname, 'catalogo_regalos.json');
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html'))); 
 
 app.get('/vista_conexion', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_conexion.html')));
+app.get('/vista_cola_regalos', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_cola_regalos.html')));
 app.get('/vista_versus', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_versus.html')));
 app.get('/vista_versus_unidades', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_versus_unidades.html')));
 app.get('/vista_regalos', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_regalos.html')));
@@ -34,6 +35,7 @@ app.get('/vista_sociales', (req, res) => res.sendFile(path.join(__dirname, 'vist
 app.get('/vista_wins_ruleta', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_wins_ruleta.html')));
 app.get('/vista_salon_fama', (req, res) => res.sendFile(path.join(__dirname, 'vistas', 'vista_salon_fama.html')));
 
+app.get('/cola_regalos', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'cola_regalos.html')));
 app.get('/salon_fama', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'salon_fama.html')));
 app.get('/versus', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'versus.html'))); 
 app.get('/versus_unidades', (req, res) => res.sendFile(path.join(__dirname, 'overlays', 'versus_unidades.html'))); 
@@ -52,9 +54,11 @@ let topLikesMemoryRound = {};
 let topVIPMemoryRound = {};
 let teamSalvar = { total: 0, donators: {} };
 let teamReiniciar = { total: 0, donators: {} };
-
-// 🌟 Ronda exclusiva de Racha Versus en RAM (No se borra cuando versus.html llega a 0, solo cuando cierras ronda manualmente)
 let rachaVersusRound = { salvar: {}, reiniciar: {} };
+
+// 🌟 Cola de Pedidos / Regalos en RAM
+let colaRegalosMemory = []; 
+const colaAutoTimers = new Map();
 
 // Unidades Normales y Súper Unidades en RAM
 let teamSalvarUnidades = { total: 0 };
@@ -133,6 +137,15 @@ let configGlobal = {
             superScale: 100
         }
     },
+    colaRegalos: {
+        sortOrder: "oldest", // "oldest" (más antiguo a más reciente) o "newest"
+        autoRemove: false,
+        autoRemoveSeconds: 20,
+        maxVisible: 6,
+        regalosConfigurados: [
+            { id: 5655, name: "Rose", diamonds: 1, image: "", actionText: "BATE" }
+        ]
+    },
     enableCountdown: true,
     countdownSeconds: 30,
     showTopText: false,
@@ -168,6 +181,15 @@ if (fs.existsSync(pathData)) {
                 if (v && (v.wins > 0 || v.streak > 0)) limpios[k] = v;
             }
             configGlobal.topVIP.recordHistorico = limpios;
+        }
+        if (!configGlobal.colaRegalos) {
+            configGlobal.colaRegalos = {
+                sortOrder: "oldest",
+                autoRemove: false,
+                autoRemoveSeconds: 20,
+                maxVisible: 6,
+                regalosConfigurados: [{ id: 5655, name: "Rose", diamonds: 1, image: "", actionText: "BATE" }]
+            };
         }
         if (!configGlobal.salonFama) configGlobal.salonFama = { record: {}, displayLimit: 5, alignment: 'left', minCoins: 10 };
         if (configGlobal.salonFama.minCoins === undefined) configGlobal.salonFama.minCoins = 10;
@@ -205,6 +227,94 @@ function guardarEnArchivo(inmediato = false) {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(escribir, 800);
     }
+}
+
+// 🌟 FUNCIONES DE LA COLA DE PEDIDOS / REGALOS
+function emitColaRegalos() {
+    io.emit('cola_regalos_update', {
+        queue: colaRegalosMemory,
+        config: configGlobal.colaRegalos
+    });
+}
+
+function tacharItemCola(uid) {
+    const item = colaRegalosMemory.find(i => i.uid === uid);
+    if (!item || item.completed) return;
+
+    item.completed = true;
+    if (colaAutoTimers.has(uid)) {
+        clearTimeout(colaAutoTimers.get(uid));
+        colaAutoTimers.delete(uid);
+    }
+    emitColaRegalos();
+
+    // Tras 650ms de mostrar la animación de tachado ("LISTO"), se retira de la lista
+    setTimeout(() => {
+        colaRegalosMemory = colaRegalosMemory.filter(i => i.uid !== uid);
+        emitColaRegalos();
+    }, 650);
+}
+
+function programarAutoTachadoSiActivo(uid) {
+    if (!configGlobal.colaRegalos || !configGlobal.colaRegalos.autoRemove) return;
+    const segs = Math.max(3, parseInt(configGlobal.colaRegalos.autoRemoveSeconds) || 20);
+
+    if (colaAutoTimers.has(uid)) clearTimeout(colaAutoTimers.get(uid));
+    const timerId = setTimeout(() => {
+        colaAutoTimers.delete(uid);
+        tacharItemCola(uid);
+    }, segs * 1000);
+
+    colaAutoTimers.set(uid, timerId);
+}
+
+function registrarPedidoEnCola({ userId, userName, avatar, giftId, giftName, giftImage, cantidad, comboKey }) {
+    if (!configGlobal.colaRegalos || !Array.isArray(configGlobal.colaRegalos.regalosConfigurados)) return;
+
+    const confGift = configGlobal.colaRegalos.regalosConfigurados.find(r => Number(r.id) === Number(giftId));
+    if (!confGift) return; // Solo entran los regalos configurados en la vista
+
+    const now = Date.now();
+    const imgFinal = giftImage || confGift.image || "";
+    const actionText = confGift.actionText || confGift.name || giftName;
+
+    // Agrupar si es parte del mismo combo o si el mismo usuario envió el mismo regalo hace menos de 8 segundos y sigue pendiente
+    let existente = colaRegalosMemory.find(item =>
+        !item.completed &&
+        item.userId === userId &&
+        Number(item.giftId) === Number(giftId) &&
+        (item.comboKey === comboKey || (now - item.lastUpdate) < 8000)
+    );
+
+    if (existente) {
+        existente.count += cantidad;
+        existente.lastUpdate = now;
+        if (avatar) existente.avatar = avatar;
+        if (imgFinal) existente.giftImage = imgFinal;
+        programarAutoTachadoSiActivo(existente.uid);
+    } else {
+        const uid = `ord_${now}_${Math.floor(Math.random() * 10000)}`;
+        const nuevoItem = {
+            uid,
+            comboKey,
+            userId,
+            userName,
+            avatar,
+            giftId: Number(giftId),
+            giftName: confGift.name || giftName,
+            giftImage: imgFinal,
+            actionText,
+            count: cantidad,
+            timestamp: now,
+            lastUpdate: now,
+            completed: false
+        };
+        colaRegalosMemory.push(nuevoItem);
+        if (colaRegalosMemory.length > 80) colaRegalosMemory.shift();
+        programarAutoTachadoSiActivo(uid);
+    }
+
+    emitColaRegalos();
 }
 
 function getTopLikesPayload() {
@@ -298,6 +408,7 @@ function sincronizarImagenesAsignadas() {
 
     if (configGlobal.equipo1) actualizarLista(configGlobal.equipo1.regalos);
     if (configGlobal.equipo2) actualizarLista(configGlobal.equipo2.regalos);
+    if (configGlobal.colaRegalos) actualizarLista(configGlobal.colaRegalos.regalosConfigurados);
     if (configGlobal.unidades) {
         if (configGlobal.unidades.equipo1) actualizarLista(configGlobal.unidades.equipo1.regalos);
         if (configGlobal.unidades.equipo2) actualizarLista(configGlobal.unidades.equipo2.regalos);
@@ -801,6 +912,7 @@ function conectarTikTok(usuario) {
         if (configGlobal.roundGifts && unitPrice % 10 === 9) unitPrice += 1;
 
         let cantidadAProcesar = 0;
+        let comboKey = data.groupId || `${user}_${giftId}`;
 
         if (data.giftType === 1) {
             let comboId = data.groupId || data.msgId; 
@@ -824,6 +936,18 @@ function conectarTikTok(usuario) {
 
         if (isNaN(cantidadAProcesar) || cantidadAProcesar <= 0) return;
         const totalCoins = unitPrice * cantidadAProcesar;
+
+        // 🌟 REGISTRAR EN LA COLA DE PEDIDOS SI EL REGALO ESTÁ EN LA LISTA CONFIGURADA
+        registrarPedidoEnCola({
+            userId: user,
+            userName: cleanName,
+            avatar: avatarUrl,
+            giftId,
+            giftName,
+            giftImage: (knownGift && knownGift.image) ? knownGift.image : giftImgUrl,
+            cantidad: cantidadAProcesar,
+            comboKey
+        });
 
         if (configGlobal.winsRuleta) {
             let isSumarWins = configGlobal.winsRuleta.regalosSumar.some(r => Number(r.id) === giftId);
@@ -887,7 +1011,6 @@ function conectarTikTok(usuario) {
             teamSalvar.donators[user].displayName = cleanName;
             teamSalvar.donators[user].coins += totalCoins;
 
-            // Acumular en la ronda persistente de Racha Versus (Solo se reinicia cuando cierras ronda manualmente)
             if (!rachaVersusRound.salvar[user]) rachaVersusRound.salvar[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
             rachaVersusRound.salvar[user].avatar = avatarUrl;
             rachaVersusRound.salvar[user].displayName = cleanName;
@@ -901,7 +1024,6 @@ function conectarTikTok(usuario) {
             teamReiniciar.donators[user].displayName = cleanName;
             teamReiniciar.donators[user].coins += totalCoins;
 
-            // Acumular en la ronda persistente de Racha Versus (Solo se reinicia cuando cierras ronda manualmente)
             if (!rachaVersusRound.reiniciar[user]) rachaVersusRound.reiniciar[user] = { coins: 0, avatar: avatarUrl, displayName: cleanName };
             rachaVersusRound.reiniciar[user].avatar = avatarUrl;
             rachaVersusRound.reiniciar[user].displayName = cleanName;
@@ -951,6 +1073,7 @@ io.on('connection', (socket) => {
     socket.emit('config_actual', configGlobal);
     socket.emit('catalogo_actualizado', catalogoGlobal);
     socket.emit('racha_versus_update', getRachaVersusPayload());
+    socket.emit('cola_regalos_update', { queue: colaRegalosMemory, config: configGlobal.colaRegalos });
     socket.emit('sync_likes_actuales', currentTotalLikes);
     socket.emit('top_likes_data_update', getTopLikesPayload()); 
     socket.emit('top_vip_data_update', getTopVIPPayload()); 
@@ -979,6 +1102,47 @@ io.on('connection', (socket) => {
     });
 
     socket.on('comando_desconectar', () => desconectarTikTok());
+
+    // 🌟 EVENTOS DE LA COLA DE PEDIDOS Y REGALOS
+    socket.on('cola_regalos_guardar_config', (nuevaConfCola) => {
+        configGlobal.colaRegalos = {
+            ...configGlobal.colaRegalos,
+            ...nuevaConfCola
+        };
+        sincronizarImagenesAsignadas();
+        guardarEnArchivo(true);
+        io.emit('config_actual', configGlobal);
+        emitColaRegalos();
+    });
+
+    socket.on('cola_regalos_tachar', (uid) => {
+        tacharItemCola(uid);
+    });
+
+    socket.on('cola_regalos_limpiar', () => {
+        colaAutoTimers.forEach(t => clearTimeout(t));
+        colaAutoTimers.clear();
+        colaRegalosMemory = [];
+        emitColaRegalos();
+    });
+
+    socket.on('cola_regalos_test', () => {
+        const confList = configGlobal.colaRegalos?.regalosConfigurados || [];
+        const sampleGift = confList[0] || { id: 5655, name: "Rose", image: "", actionText: "BATE" };
+        const nombresDemo = ["PedroGamer", "CarlosPro", "LuciaTikTok", "MaxPower"];
+        const nombreElegido = nombresDemo[Math.floor(Math.random() * nombresDemo.length)];
+
+        registrarPedidoEnCola({
+            userId: nombreElegido.toLowerCase(),
+            userName: nombreElegido,
+            avatar: "",
+            giftId: sampleGift.id,
+            giftName: sampleGift.name,
+            giftImage: sampleGift.image,
+            cantidad: Math.random() > 0.4 ? 10 : 1,
+            comboKey: `demo_${nombreElegido}_${sampleGift.id}`
+        });
+    });
 
     socket.on('escanear_regalos_tiktok', async () => {
         try {
@@ -1019,6 +1183,7 @@ io.on('connection', (socket) => {
         if (configGlobal.unidades) nuevaConfig.unidades = configGlobal.unidades;
         if (configGlobal.winsRuleta) nuevaConfig.winsRuleta = configGlobal.winsRuleta;
         if (configGlobal.salonFama) nuevaConfig.salonFama = configGlobal.salonFama;
+        if (configGlobal.colaRegalos) nuevaConfig.colaRegalos = configGlobal.colaRegalos;
 
         Object.assign(configGlobal, nuevaConfig);
         sincronizarImagenesAsignadas();
@@ -1272,7 +1437,6 @@ io.on('connection', (socket) => {
         io.emit('config_actual', configGlobal);
     });
     
-    // El reset de la barra/contador de batalla solo reinicia el contador de batalla, NO borra la ronda de Racha Versus
     socket.on('reset', () => {
         teamSalvar = { total: 0, donators: {} }; 
         teamReiniciar = { total: 0, donators: {} };
@@ -1300,12 +1464,10 @@ io.on('connection', (socket) => {
         emitSalvarUpdate(io);
     });
 
-    // 🌟 CIERRE MANUAL DE RONDA EN RACHA VERSUS (+1 Copa al Top 1 de cada equipo y reinicia sus monedas de ronda)
     socket.on('racha_versus_cerrar_ronda', () => {
         cerrarRondaRachaVersus();
     });
 
-    // Ignoramos el registro automático de versus.html para que las copas solo se sumen cuando cierres ronda manualmente
     socket.on('registrar_victoria_versus', () => {});
 
     socket.on('racha_versus_ajuste', (data) => {
@@ -1339,7 +1501,6 @@ io.on('connection', (socket) => {
         io.emit('racha_versus_update', getRachaVersusPayload());
     });
     
-    // Limpiar la ronda actual de Racha Versus sin entregar copa
     socket.on('racha_versus_clear_visual', () => {
         rachaVersusRound = { salvar: {}, reiniciar: {} };
         io.emit('racha_versus_update', getRachaVersusPayload());
