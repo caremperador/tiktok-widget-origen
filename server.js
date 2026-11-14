@@ -56,7 +56,7 @@ let teamSalvar = { total: 0, donators: {} };
 let teamReiniciar = { total: 0, donators: {} };
 let rachaVersusRound = { salvar: {}, reiniciar: {} };
 
-// 🌟 Cola de Pedidos / Regalos en RAM
+// Cola de Pedidos / Regalos en RAM
 let colaRegalosMemory = []; 
 const colaAutoTimers = new Map();
 
@@ -77,7 +77,6 @@ let currentRoomId = null;
 let currentConnectedUser = "";
 let isConnectingNow = false;
 let currentTotalLikes = 0; 
-let userTeams = {}; 
 
 let ultimoSeguidorData = { name: "ESPERANDO...", avatar: "" };
 let ultimoQuieremeData = { name: "ESPERANDO...", avatar: "" };
@@ -94,8 +93,8 @@ let configGlobal = {
     username: "",
     historial: [],
     hidePowerBar: true,
-    equipo1: { nombre: "SALVAR", sub: "SALVAR", color: "#00ff66", regalos: regalosEq1Defecto, joinWords: "chicos, heroes, salvar, 1" },
-    equipo2: { nombre: "REINICIAR", sub: "RESET", color: "#ff003c", regalos: regalosEq2Defecto, joinWords: "chicas, villanos, reiniciar, 2" },
+    equipo1: { nombre: "SALVAR", sub: "SALVAR", color: "#00ff66", regalos: regalosEq1Defecto },
+    equipo2: { nombre: "REINICIAR", sub: "RESET", color: "#ff003c", regalos: regalosEq2Defecto },
     battleStyle: {
         fontFamily: "'Luckiest Guy', cursive",
         textStroke: 1.5,
@@ -138,7 +137,7 @@ let configGlobal = {
         }
     },
     colaRegalos: {
-        sortOrder: "oldest", // "oldest" (más antiguo a más reciente) o "newest"
+        sortOrder: "oldest",
         autoRemove: false,
         autoRemoveSeconds: 20,
         maxVisible: 6,
@@ -170,6 +169,9 @@ if (fs.existsSync(pathData)) {
         configGlobal = { ...configGlobal, ...guardado };
 
         delete configGlobal.racha;
+        if (configGlobal.equipo1) delete configGlobal.equipo1.joinWords;
+        if (configGlobal.equipo2) delete configGlobal.equipo2.joinWords;
+
         if (configGlobal.topLikes) {
             delete configGlobal.topLikes.currentRound;
             if (configGlobal.topLikes.keepOnGlobalClose === undefined) configGlobal.topLikes.keepOnGlobalClose = false;
@@ -229,7 +231,6 @@ function guardarEnArchivo(inmediato = false) {
     }
 }
 
-// 🌟 FUNCIONES DE LA COLA DE PEDIDOS / REGALOS
 function emitColaRegalos() {
     io.emit('cola_regalos_update', {
         queue: colaRegalosMemory,
@@ -248,7 +249,6 @@ function tacharItemCola(uid) {
     }
     emitColaRegalos();
 
-    // Tras 650ms de mostrar la animación de tachado ("LISTO"), se retira de la lista
     setTimeout(() => {
         colaRegalosMemory = colaRegalosMemory.filter(i => i.uid !== uid);
         emitColaRegalos();
@@ -272,13 +272,12 @@ function registrarPedidoEnCola({ userId, userName, avatar, giftId, giftName, gif
     if (!configGlobal.colaRegalos || !Array.isArray(configGlobal.colaRegalos.regalosConfigurados)) return;
 
     const confGift = configGlobal.colaRegalos.regalosConfigurados.find(r => Number(r.id) === Number(giftId));
-    if (!confGift) return; // Solo entran los regalos configurados en la vista
+    if (!confGift) return;
 
     const now = Date.now();
     const imgFinal = giftImage || confGift.image || "";
     const actionText = confGift.actionText || confGift.name || giftName;
 
-    // Agrupar si es parte del mismo combo o si el mismo usuario envió el mismo regalo hace menos de 8 segundos y sigue pendiente
     let existente = colaRegalosMemory.find(item =>
         !item.completed &&
         item.userId === userId &&
@@ -787,12 +786,6 @@ function conectarTikTok(usuario) {
                 recentFollowers.delete(user); 
             }
         }
-
-        let wordsEq1 = (configGlobal.equipo1.joinWords || "chicos, heroes, salvar, 1").toLowerCase().split(',').map(w=>w.trim()).filter(w=>w.length > 0);
-        let wordsEq2 = (configGlobal.equipo2.joinWords || "chicas, villanos, reiniciar, 2").toLowerCase().split(',').map(w=>w.trim()).filter(w=>w.length > 0);
-
-        if (wordsEq1.some(w => texto.includes(w))) userTeams[user] = 1;
-        else if (wordsEq2.some(w => texto.includes(w))) userTeams[user] = 2;
     });
 
     connectionInstance.on('like', data => {
@@ -937,7 +930,6 @@ function conectarTikTok(usuario) {
         if (isNaN(cantidadAProcesar) || cantidadAProcesar <= 0) return;
         const totalCoins = unitPrice * cantidadAProcesar;
 
-        // 🌟 REGISTRAR EN LA COLA DE PEDIDOS SI EL REGALO ESTÁ EN LA LISTA CONFIGURADA
         registrarPedidoEnCola({
             userId: user,
             userName: cleanName,
@@ -998,11 +990,23 @@ function conectarTikTok(usuario) {
         topVIPMemoryRound[user].coins += totalCoins;
         io.emit('top_vip_data_update', getTopVIPPayload());
 
-        let isSalvarMonedas = configGlobal.equipo1.regalos.some(r => Number(r.id) === giftId);
-        let isReiniciarMonedas = configGlobal.equipo2.regalos.some(r => Number(r.id) === giftId);
-        
-        if (userTeams[user] === 1) { isSalvarMonedas = true; isReiniciarMonedas = false; } 
-        else if (userTeams[user] === 2) { isSalvarMonedas = false; isReiniciarMonedas = true; }
+        // ✅ DETECCIÓN 100% POR REGALO ASIGNADO (Sin interferencia de chat / userTeams)
+        const giftNameLower = (giftName || "").toLowerCase().trim();
+        let isSalvarMonedas = (configGlobal.equipo1?.regalos || []).some(r =>
+            Number(r.id) === giftId || (r.name && r.name.toLowerCase().trim() === giftNameLower)
+        );
+        let isReiniciarMonedas = (configGlobal.equipo2?.regalos || []).some(r =>
+            Number(r.id) === giftId || (r.name && r.name.toLowerCase().trim() === giftNameLower)
+        );
+
+        // Si por error asignaste el mismo regalo en ambos equipos, prioriza el Equipo 2 si es Rose/Rosa, o Equipo 1
+        if (isSalvarMonedas && isReiniciarMonedas) {
+            if (giftId === 5655 || giftNameLower.includes('rose') || giftNameLower.includes('rosa')) {
+                isSalvarMonedas = false;
+            } else {
+                isReiniciarMonedas = false;
+            }
+        }
 
         if (isSalvarMonedas) {
             teamSalvar.total += totalCoins;
@@ -1103,7 +1107,6 @@ io.on('connection', (socket) => {
 
     socket.on('comando_desconectar', () => desconectarTikTok());
 
-    // 🌟 EVENTOS DE LA COLA DE PEDIDOS Y REGALOS
     socket.on('cola_regalos_guardar_config', (nuevaConfCola) => {
         configGlobal.colaRegalos = {
             ...configGlobal.colaRegalos,
@@ -1177,8 +1180,6 @@ io.on('connection', (socket) => {
         nuevaConfig.username = configGlobal.username;
         nuevaConfig.regalosDisponibles = catalogoGlobal; 
         
-        if (!nuevaConfig.equipo1.joinWords) nuevaConfig.equipo1.joinWords = configGlobal.equipo1.joinWords;
-        if (!nuevaConfig.equipo2.joinWords) nuevaConfig.equipo2.joinWords = configGlobal.equipo2.joinWords;
         if (!nuevaConfig.sociales) nuevaConfig.sociales = configGlobal.sociales;
         if (configGlobal.unidades) nuevaConfig.unidades = configGlobal.unidades;
         if (configGlobal.winsRuleta) nuevaConfig.winsRuleta = configGlobal.winsRuleta;
@@ -1440,7 +1441,6 @@ io.on('connection', (socket) => {
     socket.on('reset', () => {
         teamSalvar = { total: 0, donators: {} }; 
         teamReiniciar = { total: 0, donators: {} };
-        userTeams = {}; 
         emitSalvarUpdate(io);
     });
 
